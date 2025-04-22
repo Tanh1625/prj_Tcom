@@ -1,0 +1,43 @@
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+  <title>Quên mật khẩu</title>
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen" style="border: 10px solid #D6CFF7;">
+<div class="w-full max-w-sm mx-auto">
+  <div class="text-center mb-8">
+    <img src="/images/Screenshot_2025-04-16_133839-removebg-preview.png" alt="Company Logo" class="mx-auto mb-4" style="width:auto; height:auto;"/>
+
+    <h1 class="text-2xl font-bold">
+      TCOM
+    </h1>
+    <p class="text-gray-600">
+      TECH FOR LIFE
+    </p>
+  </div>
+  <div class="bg-white p-8 rounded-lg shadow-md">
+    <h2 class="text-center text-lg font-medium mb-4">Vui lòng nhập địa chỉ email đã đăng ký của bạn</h2>
+    <form>
+      <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
+          Email
+        </label>
+        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" placeholder="Email" type="email"/>
+      </div>
+      <div>
+        <button class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" type="submit">
+          Đặt lại mật khẩu
+        </button>
+      </div>
+    </form>
+    <div class="mt-4 text-center">
+      <a class="text-blue-600 hover:underline" th:href="@{/login}">
+        Đăng nhập
+      </a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

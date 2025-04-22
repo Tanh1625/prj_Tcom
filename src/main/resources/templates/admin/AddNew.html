@@ -1,0 +1,93 @@
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+    <title>Thêm người dùng mới</title>
+</head>
+<body class="bg-purple-50 min-h-screen flex items-center justify-center p-4">
+<div class="bg-white rounded-lg shadow-md w-full max-w-md p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-6 text-center select-none">Thêm người dùng mới</h2>
+    <form class="space-y-5" method="post" th:action="@{/addUser}">
+        <div class="flex flex-col">
+            <h1 style="color: red" th:text="${errorAdd}"></h1>
+            <label for="fullName" class="mb-1 text-gray-700 select-none">Tên</label>
+            <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    placeholder="Nhập tên"
+                    th:value="${fullName}"
+
+                    class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            >
+        </div>
+        <div class="flex flex-col">
+            <label for="email" class="mb-1 text-gray-700 select-none">Email</label>
+            <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="Nhập email"
+                    th:value="${email}"
+                    required
+                    class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            />
+        </div>
+        <div class="flex flex-col">
+            <label for="password" class="mb-1 text-gray-700 select-none">Mật khẩu</label>
+            <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Nhập mật khẩu"
+
+                    class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            />
+        </div>
+        <div class="flex flex-col">
+            <label for="confirmPassword" class="mb-1 text-gray-700 select-none">Xác nhận mật khẩu</label>
+            <input
+                    type="password"
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Xác nhận mật khẩu"
+
+                    class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            />
+        </div>
+        <div class="flex flex-col">
+            <label for="role" class="mb-1 text-gray-700 select-none">Quyền</label>
+            <select
+                    id="role"
+                    name="role"
+
+                    class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+            >
+                <option th:selected="${role == 'Admin'}" value="Admin">Admin</option>s
+                <option th:selected="${role == 'Employee'}" value="Employee">Employee</option>
+            </select>
+        </div>
+        <div class="flex justify-end space-x-3 pt-2">
+            <a href="/admin/home"
+               class="text-gray-700 text-sm px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1 inline-block text-center">
+                Hủy
+            </a>
+
+            <button
+                    type="submit"
+                    class="bg-blue-600 text-white text-sm px-5 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1"
+            >
+                Thêm mới
+            </button>
+        </div>
+    </form>
+</div>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<!-- templates/fragments/navbar.html -->
+<div class="flex justify-between items-center mb-4" th:fragment="navbar">
+    <div class="flex items-center space-x-6">
+        <img alt="Logo" class="mr-2" height="40" src="/images/logo.png" width="40"/>
+        <a class="text-gray-600 text-sm font-normal hover:underline" th:href="@{/admin/home}">
+            Quản lý người dùng
+        </a>
+        <a class="text-gray-600 text-sm font-normal hover:underline" th:href="@{/admin/question}">
+            Quản lý câu hỏi
+        </a>
+        <a class="text-gray-600 text-sm font-normal hover:underline" href="#">
+            Lịch sử của tôi
+        </a>
+    </div>
+    <li class="nav-item dropdown d-flex align-items-center" style="margin-right: 5px;">
+        <a href="#" class="nav-link text-body font-weight-bold px-0 d-flex align-items-center"
+           id="userProfileDropdown"
+           role="button"
+           data-bs-toggle="dropdown"
+           aria-expanded="false">
+             <span class="d-none d-md-inline-block ms-2">Profile</span>
+        </a>
+
+        <!-- User Profile Dropdown Menu -->
+        <ul class="dropdown-menu dropdown-menu-end px-2 py-3 me-sm-n4"
+            aria-labelledby="userProfileDropdown">
+            <li>
+                <a class="dropdown-item border-radius-md" href="/profile">
+                    <div class="d-flex align-items-center py-1">
+                        <i class="material-symbols-rounded me-2">person</i>
+                        <span class="text-sm">Hồ sơ</span>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item border-radius-md" href="/logout">
+                    <div class="d-flex align-items-center py-1">
+                        <i class="material-symbols-rounded me-2">logout</i>
+                        <span class="text-sm">Đăng xuất</span>
+                    </div>
+                </a>
+            </li>
+        </ul>
+    </li>
+<!--    <div>-->
+<!--        -->
+<!--    </div>-->
+</div>
