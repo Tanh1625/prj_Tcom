@@ -58,8 +58,8 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    public Question getQuesByContent(String quesContent) {
-        return questionReporsitory.findQuestionsByQuestionContent(quesContent);
+    public Question getQuesByContent(String quesContent, int quesType) {
+        return questionReporsitory.findQuestionsByQuestionContentAndQuestionType(quesContent, quesType);
     }
 
     @Override

@@ -17,7 +17,7 @@ public interface QuestionService {
 
     void addQues(String quesContent, int quesType, String email);
 
-    Question getQuesByContent(String quesContent);
+    Question getQuesByContent(String quesContent, int quesType);
 
     void updateQuestion(String questionContent, int questionId);
 

@@ -22,4 +22,6 @@ public interface QuestionReporsitory extends JpaRepository<Question, Integer> {
     Question findQuestionsByQuestionContent(String questionContent);
 
     boolean existsByQuestionContentAndQuestionType(String questionContent, int questionType);
+
+    Question findQuestionsByQuestionContentAndQuestionType(String questionContent, int questionType);
 }

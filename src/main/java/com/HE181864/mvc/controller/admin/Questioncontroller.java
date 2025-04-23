@@ -52,6 +52,8 @@ public class Questioncontroller {
 
 
         Page<Question> questionList = questionService.getQuesbyType(pageNo, key);
+        System.err.println(questionList.getTotalElements());
+        model.addAttribute("totalQues", questionList.getTotalElements());
         model.addAttribute("questionTypes", key);
         model.addAttribute("currentPage", pageNo);
         model.addAttribute("totalPage", questionList.getTotalPages());
@@ -97,7 +99,7 @@ public class Questioncontroller {
             return link;
         }
         questionService.addQues(quesContent, quesType, email);
-        Question ques = questionService.getQuesByContent(quesContent);
+        Question ques = questionService.getQuesByContent(quesContent, quesType);
 
         //Add answer
         List<Answer> answers = new ArrayList<>();
