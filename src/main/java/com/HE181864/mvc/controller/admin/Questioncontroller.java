@@ -1,9 +1,13 @@
 package com.HE181864.mvc.controller.admin;
 
 import com.HE181864.mvc.model.Answer;
+import com.HE181864.mvc.model.Logtracking;
 import com.HE181864.mvc.model.Question;
+import com.HE181864.mvc.model.User;
 import com.HE181864.mvc.service.AnswerService;
+import com.HE181864.mvc.service.LogTrackingService;
 import com.HE181864.mvc.service.QuestionService;
+import com.HE181864.mvc.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +31,12 @@ public class Questioncontroller {
 
     @Autowired
     private AnswerService answerService;
+
+    @Autowired
+    private LogTrackingService logTrackingService;
+
+    @Autowired
+    private UserService userService;
 
 
     @GetMapping("/admin/question")
@@ -45,8 +56,6 @@ public class Questioncontroller {
                                 @ModelAttribute("search") String search) {
 
         Authentication authen = SecurityContextHolder.getContext().getAuthentication();
-//        UserDetailsImpl userDetails = (UserDetailsImpl) authen.getPrincipal();
-//        String userId = userDetails.getUsername();
         String email = authen.getName();
         model.addAttribute("userId", email);
 
@@ -75,6 +84,17 @@ public class Questioncontroller {
         }
         questionService.deleteQues(quesId);
         redirectAttributes.addFlashAttribute("message", "Xóa câu hỏi thành công");
+
+
+        // logTracking
+        Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+        String emailCur = authen.getName();
+        User userCur = userService.getUserByEmail(emailCur);
+        Logtracking logTracking = new Logtracking();
+        logTracking.setUser(userCur);
+        logTracking.setContent("Xóa câu hỏi: " + ques.getQuestionContent());
+        logTracking.setTime(LocalDateTime.now());
+        logTrackingService.saveLog(logTracking);
         return link;
     }
 
@@ -136,6 +156,15 @@ public class Questioncontroller {
             answerService.addAnswer(answer);
         }
 
+        // logTracking
+        String emailCur = authen.getName();
+        User userCur = userService.getUserByEmail(emailCur);
+        Logtracking logTracking = new Logtracking();
+        logTracking.setUser(userCur);
+        logTracking.setContent("Thêm câu hỏi: " + quesContent);
+        logTracking.setTime(LocalDateTime.now());
+        logTrackingService.saveLog(logTracking);
+
         redirectAttributes.addFlashAttribute("message", "Thêm câu hỏi thành công");
         return link;
     }
@@ -163,7 +192,7 @@ public class Questioncontroller {
         if (question == null) {
             System.out.println("Question not found");
         }
-        if(questionService.isExitQuestion(questionContent, question.getQuestionType())) {
+        if(questionService.isExitQuestion(questionContent, question.getQuestionType()) && !question.getQuestionContent().equals(questionContent)) {
             redirectAttributes.addFlashAttribute("message", "Chỉnh sửa thất bại do câu hỏi đã tồn tại");
             return link;
         }
@@ -213,6 +242,16 @@ public class Questioncontroller {
             System.err.println("Is correct: " + answer.isCorrect());
             answerService.updateAnswer(answer);
         }
+
+        // logTracking
+        Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+        String emailCur = authen.getName();
+        User userCur = userService.getUserByEmail(emailCur);
+        Logtracking logTracking = new Logtracking();
+        logTracking.setUser(userCur);
+        logTracking.setContent("Chỉnh sửa câu hỏi: " + questionContent);
+        logTracking.setTime(LocalDateTime.now());
+        logTrackingService.saveLog(logTracking);
 
         redirectAttributes.addFlashAttribute("message", "Chỉnh câu hỏi thành công");
         return link;
