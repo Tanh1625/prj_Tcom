@@ -56,4 +56,23 @@ public class QuestionServiceImpl implements QuestionService {
         questionReporsitory.save(ques);
         System.out.println("Done add new question");
     }
+
+    @Override
+    public Question getQuesByContent(String quesContent) {
+        return questionReporsitory.findQuestionsByQuestionContent(quesContent);
+    }
+
+    @Override
+    public void updateQuestion(String questionContent, int questionId) {
+        Question ques = questionReporsitory.findQuestionsByQuestionId(questionId);
+        if (ques != null) {
+            ques.setQuestionContent(questionContent);
+            questionReporsitory.save(ques);
+        }
+    }
+
+    @Override
+    public boolean isExitQuestion(String quesContent, int quesType) {
+        return questionReporsitory.existsByQuestionContentAndQuestionType(quesContent, quesType);
+    }
 }

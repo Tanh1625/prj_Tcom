@@ -134,32 +134,71 @@
         </div>
     </div>
 
-    <!-- add User Modal -->
+    <!-- add Question Modal -->
     <div id="addModel" aria-labelledby="modal-title" aria-modal="true"
          style="background-color: #000000a8;"
          class="fixed inset-0 flex items-center justify-center z-50 " role="dialog"
          th:classappend="${errorAdd} != null ? '' : ' hidden'">
-        <div class="bg-white rounded-lg shadow-lg w-[560px] max-w-full p-6">
-            <h2 class="text-sm font-semibold text-gray-900 mb-4 select-none" id="modal-title">
-                Thêm câu hỏi mới
-            </h2>
+        <div class="bg-white rounded-lg shadow-lg w-[700px] max-w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-900 select-none" id="modal-title">
+                    Thêm câu hỏi mới
+                </h2>
+                <button type="button" onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <h2 style="color: red" th:text="${errorAdd}"></h2>
-            <form id="editUserForm" class="space-y-4 text-xs text-gray-700" method="post" th:action="@{/admin/addQues}">
+            <form id="addQuestionForm" class="space-y-4 text-sm text-gray-700" method="post" th:action="@{/admin/addQues}">
                 <input type="hidden" id="quesType" name="quesType" th:value="${questionTypes}"/>
-                <div class="flex flex-col">
-                    <label class="mb-1 select-none" for="quesContent">
-                        Nội dung câu hỏi
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="quesContent">
+                        Nội dung câu hỏi:
                     </label>
-                    <input class="border border-gray-300 rounded-md px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent "
-                           id="quesContent" name="quesContent" type="text"/>
+                    <textarea
+                            id="quesContent"
+                            name="quesContent"
+                            rows="3"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                            required
+                    ></textarea>
                 </div>
 
-                <div class="flex justify-end space-x-3 pt-2">
-                    <button class="text-gray-700 text-xs px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1"
-                            type="button" onclick="closeEditModal()">
+                <div class="border-t border-gray-200 pt-4">
+                    <div id="add-answers-container" class="space-y-4 mb-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-medium text-gray-700">Các đáp án: <span class="text-xs text-gray-500">(tối đa 4 đáp án)</span></h3>
+                            <span id="add-answers-count" class="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">0/4</span>
+                        </div>
+                        <div id="add-answers-list" class="space-y-3">
+                            <!-- Đáp án sẽ được thêm vào đây bằng JavaScript -->
+                        </div>
+
+                        <div class="mt-2 flex items-center">
+                            <button
+                                    type="button"
+                                    id="add-new-answer-btn"
+                                    class="text-xs px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            >
+                                Thêm đáp án
+                            </button>
+                            <p id="add-answer-limit-message" class="text-xs text-orange-500 ml-3 hidden">
+                                Đã đạt giới hạn tối đa 4 đáp án
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                            type="button"
+                            onclick="closeEditModal()">
                         Hủy
                     </button>
-                    <button class="bg-blue-600 text-white text-xs px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-1"
+                    <button
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
                             type="submit">
                         Lưu
                     </button>
@@ -200,25 +239,11 @@
                     </div>
 
                     <div id="edit-answers-container" class="space-y-4 mb-4">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-sm font-medium text-gray-700">Các đáp án: <span class="text-xs text-gray-500">(tối đa 4 đáp án)</span></h3>
-                            <span id="answers-count" class="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">0/4</span>
+                        <div class="mb-2">
+                            <h3 class="text-sm font-medium text-gray-700">Các đáp án:</h3>
                         </div>
                         <div id="answers-list" class="space-y-3">
-                            <!-- Các đáp án sẽ được thêm vào đây bằng JavaScript -->
-                        </div>
-
-                        <div class="mt-2 flex items-center">
-                            <button
-                                    type="button"
-                                    id="add-answer-btn"
-                                    class="text-xs px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                            >
-                                Thêm đáp án
-                            </button>
-                            <p id="answer-limit-message" class="text-xs text-orange-500 ml-3 hidden">
-                                Đã đạt giới hạn tối đa 4 đáp án
-                            </p>
+                            <!-- Các đáp án hiện có sẽ được thêm vào đây bằng JavaScript -->
                         </div>
                     </div>
                 </div>
@@ -313,6 +338,14 @@
             button.addEventListener('click', function (event) {
                 event.preventDefault();
 
+                // Initialize the add question form
+                const addAnswersList = document.getElementById('add-answers-list');
+                addAnswersList.innerHTML = '';
+
+                // Add initial answer field
+                addNewAnswerInput(addAnswersList, '', false, 0);
+                updateAddAnswerCounter(1);
+
                 // Show the modal
                 document.getElementById('addModel').classList.remove('hidden');
             });
@@ -367,9 +400,6 @@
                 // Làm trống container đáp án trước khi thêm mới
                 document.getElementById('answers-list').innerHTML = '';
 
-                // Reset answer counter
-                updateAnswerCounter(0);
-
                 // Hiển thị modal
                 document.getElementById('editQuestionModal').classList.remove('hidden');
 
@@ -383,21 +413,21 @@
             document.getElementById('editQuestionModal').classList.add('hidden');
         }
 
-        // Function to update the answer counter and button state
-        function updateAnswerCounter(count) {
-            const counterElement = document.getElementById('answers-count');
+        // Function to update the answer counter for Add modal
+        function updateAddAnswerCounter(count) {
+            const counterElement = document.getElementById('add-answers-count');
             counterElement.textContent = `${count}/${MAX_ANSWERS}`;
 
-            const addAnswerBtn = document.getElementById('add-answer-btn');
-            const limitMessage = document.getElementById('answer-limit-message');
+            const addNewAnswerBtn = document.getElementById('add-new-answer-btn');
+            const limitMessage = document.getElementById('add-answer-limit-message');
 
             if (count >= MAX_ANSWERS) {
-                addAnswerBtn.disabled = true;
-                addAnswerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                addNewAnswerBtn.disabled = true;
+                addNewAnswerBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 limitMessage.classList.remove('hidden');
             } else {
-                addAnswerBtn.disabled = false;
-                addAnswerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                addNewAnswerBtn.disabled = false;
+                addNewAnswerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 limitMessage.classList.add('hidden');
             }
         }
@@ -418,38 +448,31 @@
                     answersList.innerHTML = ''; // Xóa loading
 
                     if (!answers || answers.length === 0) {
-                        // Tạo một đáp án mặc định nếu không có đáp án
-                        addAnswerInput(answersList, '', false, 0);
-                        updateAnswerCounter(1);
+                        answersList.innerHTML = '<p class="text-gray-500">Không có đáp án cho câu hỏi này.</p>';
                         return;
                     }
 
-                    // Thêm các đáp án hiện có vào form (tối đa MAX_ANSWERS)
-                    const answersToAdd = answers.slice(0, MAX_ANSWERS);
-                    answersToAdd.forEach((answer, index) => {
-                        addAnswerInput(answersList, answer.answerContent, answer.correct, index, answer.answerId);
+                    // Thêm các đáp án hiện có vào form để chỉnh sửa
+                    answers.forEach((answer, index) => {
+                        addEditOnlyAnswerInput(answersList, answer.answerContent, answer.correct, index, answer.answerId);
                     });
-
-                    // Cập nhật số lượng đáp án
-                    updateAnswerCounter(answersToAdd.length);
                 })
                 .catch(error => {
                     console.error('Error fetching answers for edit:', error);
                     answersList.innerHTML = '<p class="text-red-500">Không thể tải đáp án. Vui lòng thử lại sau.</p>';
-                    updateAnswerCounter(0);
                 });
         }
 
-        // Function to add answer input fields to the form
-        function addAnswerInput(container, content = '', isCorrect = false, index, answerId) {
+        // Function to add editable answer inputs to the edit form (không có nút xóa)
+        function addEditOnlyAnswerInput(container, content = '', isCorrect = false, index, answerId) {
             const answerDiv = document.createElement('div');
             answerDiv.className = 'flex items-start space-x-2';
 
             // Unique ID for each answer
             const uniqueId = Date.now() + '-' + index;
 
-            // Hidden input for answer ID if it exists
-            const hiddenInput = answerId ? `<input type="hidden" name="answers[${index}].answerId" value="${answerId}">` : '';
+            // Hidden input for answer ID - luôn yêu cầu có answerId khi chỉnh sửa
+            const hiddenInput = `<input type="hidden" name="answers[${index}].answerId" value="${answerId}">`;
 
             answerDiv.innerHTML = `
                 ${hiddenInput}
@@ -473,9 +496,44 @@
                         class="h-4 w-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     >
                     <label for="correct-${uniqueId}" class="text-xs text-gray-700 cursor-pointer">Đáp án đúng</label>
+                </div>
+            `;
+
+            container.appendChild(answerDiv);
+        }
+
+        // Function to add answer input fields to the add form
+        function addNewAnswerInput(container, content = '', isCorrect = false, index) {
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'flex items-start space-x-2';
+
+            // Unique ID for each answer
+            const uniqueId = 'new-' + Date.now() + '-' + index;
+
+            answerDiv.innerHTML = `
+                <div class="flex-grow">
+                    <input
+                        type="text"
+                        name="newAnswers[${index}].answerContent"
+                        value="${content}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        placeholder="Nhập nội dung đáp án"
+                        required
+                    >
+                </div>
+                <div class="flex items-center space-x-2 pt-2">
+                    <input
+                        type="radio"
+                        name="newCorrectAnswerIndex"
+                        id="correct-${uniqueId}"
+                        value="${index}"
+                        ${isCorrect ? 'checked' : ''}
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    >
+                    <label for="correct-${uniqueId}" class="text-xs text-gray-700 cursor-pointer">Đáp án đúng</label>
                     <button
                         type="button"
-                        class="text-red-500 hover:text-red-700 focus:outline-none delete-answer-btn"
+                        class="text-red-500 hover:text-red-700 focus:outline-none delete-new-answer-btn"
                         aria-label="Xóa đáp án"
                     >
                         <i class="fas fa-trash-alt"></i>
@@ -486,47 +544,41 @@
             container.appendChild(answerDiv);
 
             // Add event listener to delete button
-            const deleteBtn = answerDiv.querySelector('.delete-answer-btn');
+            const deleteBtn = answerDiv.querySelector('.delete-new-answer-btn');
             deleteBtn.addEventListener('click', function() {
                 answerDiv.remove();
                 // Renumber the answers
-                renumberAnswers();
+                renumberNewAnswers();
                 // Update counter
                 const currentCount = container.querySelectorAll('div.flex.items-start').length;
-                updateAnswerCounter(currentCount);
+                updateAddAnswerCounter(currentCount);
             });
         }
 
-        // Function to renumber answers after deletion
-        function renumberAnswers() {
-            const answersList = document.getElementById('answers-list');
+        // Function to renumber answers after deletion in add form
+        function renumberNewAnswers() {
+            const answersList = document.getElementById('add-answers-list');
             const answers = answersList.querySelectorAll('div.flex.items-start');
 
             answers.forEach((answer, index) => {
                 // Update the name attributes to have sequential indices
                 const textInput = answer.querySelector('input[type="text"]');
-                textInput.name = `answers[${index}].answerContent`;
+                textInput.name = `newAnswers[${index}].answerContent`;
 
                 const radioInput = answer.querySelector('input[type="radio"]');
                 radioInput.value = index;
-
-                // If there's a hidden input for answerId
-                const hiddenInput = answer.querySelector('input[type="hidden"]');
-                if (hiddenInput) {
-                    hiddenInput.name = `answers[${index}].answerId`;
-                }
             });
         }
 
-        // Add Answer button event listener
-        document.getElementById('add-answer-btn').addEventListener('click', function() {
-            const answersList = document.getElementById('answers-list');
+        // Add Answer button event listener for add form
+        document.getElementById('add-new-answer-btn').addEventListener('click', function() {
+            const answersList = document.getElementById('add-answers-list');
             const currentCount = answersList.querySelectorAll('div.flex.items-start').length;
 
             // Check if we've reached the maximum allowed answers
             if (currentCount < MAX_ANSWERS) {
-                addAnswerInput(answersList, '', false, currentCount);
-                updateAnswerCounter(currentCount + 1);
+                addNewAnswerInput(answersList, '', false, currentCount);
+                updateAddAnswerCounter(currentCount + 1);
             }
         });
 
@@ -578,16 +630,9 @@
                 });
         }
 
-        // Validate form before submission to ensure there's at least one answer
+        // Validate edit form before submission to ensure at least one answer is marked as correct
         document.getElementById('editQuestionForm').addEventListener('submit', function(event) {
             const answersList = document.getElementById('answers-list');
-            const answers = answersList.querySelectorAll('div.flex.items-start');
-
-            if (answers.length === 0) {
-                event.preventDefault();
-                alert('Vui lòng thêm ít nhất một đáp án cho câu hỏi.');
-                return false;
-            }
 
             // Ensure at least one answer is marked as correct
             const correctAnswer = answersList.querySelector('input[name="correctAnswerIndex"]:checked');
@@ -597,6 +642,27 @@
                 return false;
             }
 
+            return true;
+        });
+
+        // Validate add form before submission
+        document.getElementById('addQuestionForm').addEventListener('submit', function(event) {
+            const answersList = document.getElementById('add-answers-list');
+            const answers = answersList.querySelectorAll('div.flex.items-start');
+
+            if (answers.length <= 1) {
+                event.preventDefault();
+                alert('Vui lòng thêm ít nhất hai đáp án cho câu hỏi.');
+                return false;
+            }
+
+            // Ensure at least one answer is marked as correct
+            const correctAnswer = answersList.querySelector('input[name="newCorrectAnswerIndex"]:checked');
+            if (!correctAnswer) {
+                event.preventDefault();
+                alert('Vui lòng chọn một đáp án đúng.');
+                return false;
+            }
 
             return true;
         });

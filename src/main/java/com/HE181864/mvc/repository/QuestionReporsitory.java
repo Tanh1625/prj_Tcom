@@ -18,4 +18,8 @@ public interface QuestionReporsitory extends JpaRepository<Question, Integer> {
     Question findQuestionsByQuestionId(int questionId);
 
     Page<Question> findQuestionsByQuestionTypeAndStatus(int questionType, boolean status, Pageable pageable);
+
+    Question findQuestionsByQuestionContent(String questionContent);
+
+    boolean existsByQuestionContentAndQuestionType(String questionContent, int questionType);
 }
