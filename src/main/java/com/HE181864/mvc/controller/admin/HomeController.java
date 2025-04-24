@@ -44,5 +44,6 @@ public class HomeController {
         redirectAttributes.addFlashAttribute("search", search);
         return "redirect:/admin/home";
     }
+
 }
 

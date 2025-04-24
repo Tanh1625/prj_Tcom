@@ -1,20 +1,28 @@
 package com.HE181864.mvc.controller.admin;
 
+import com.HE181864.mvc.model.Logtracking;
 import com.HE181864.mvc.model.User;
+import com.HE181864.mvc.service.LogTrackingService;
 import com.HE181864.mvc.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 
 @Controller
 public class AccountController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private LogTrackingService logTrackingService;
 
     @PostMapping("/update")
     public String updateAccount(HttpServletRequest request,
@@ -51,6 +59,18 @@ public class AccountController {
             redirectAttributes.addFlashAttribute("errorUpdate", "Vui lòng điền đầy đủ thông tin");
             return "redirect:/admin/home";
         }
+
+        //logTracking
+        Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+        String emailCur = authen.getName();
+        User userCur = userService.getUserByEmail(emailCur);
+        Logtracking logTracking = new Logtracking();
+        logTracking.setUser(userCur);
+        logTracking.setContent("Cập nhật thông tin tài khoản: " + user.getFullName());
+        logTracking.setTime(LocalDateTime.now());
+        logTrackingService.saveLog(logTracking);
+
+
         return "redirect:/admin/home";
     }
 
@@ -62,6 +82,18 @@ public class AccountController {
         if(userId != null && !userId.isEmpty()) {
             userService.deleteUser(userId);
             redirectAttributes.addFlashAttribute("success", "Đã xóa tài khoản thành công");
+
+            // logTracking
+            User userToDelete = userService.getUser(userId);
+            Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+            String emailCur = authen.getName();
+            User userCur = userService.getUserByEmail(emailCur);
+            Logtracking logTracking = new Logtracking();
+            logTracking.setUser(userCur);
+            logTracking.setContent("Xóa tài khoản: " + (userToDelete != null ? userToDelete.getFullName() : "Unknown User"));
+            logTracking.setTime(LocalDateTime.now());
+            logTrackingService.saveLog(logTracking);
+
         }
         return "redirect:/admin/home";
     }
@@ -89,6 +121,19 @@ public class AccountController {
                 if(newPassword.equals(confirmPassword)) {
                     userService.resetPassword(userId, newPassword);
                     redirectAttributes.addFlashAttribute("success", "Đổi mật khẩu thành công");
+
+
+                    // logTracking
+                    Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+                    String emailCur = authen.getName();
+                    User userCur = userService.getUserByEmail(emailCur);
+                    User userReset = userService.getUser(userId);
+                    Logtracking logTracking = new Logtracking();
+                    logTracking.setUser(userCur);
+                    logTracking.setContent("Đổi mật khẩu cho tài khoản: " + (userReset != null ? userReset.getFullName() : "Unknown User"));
+                    logTracking.setTime(LocalDateTime.now());
+                    logTrackingService.saveLog(logTracking);
+
                 } else {
                     redirectAttributes.addFlashAttribute("errorChangePass", "Mật khẩu không khớp");
                 }
@@ -163,6 +208,16 @@ public class AccountController {
         // Nếu mọi thứ hợp lệ thì thêm user
         userService.addUser(fullName.trim(), password, email.trim(), role);
         redirectAttributes.addFlashAttribute("success", "Tạo tài khoản thành công");
+
+        // logTracking
+        Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+        String emailCur = authen.getName();
+        User userCur = userService.getUserByEmail(emailCur);
+        Logtracking logTracking = new Logtracking();
+        logTracking.setUser(userCur);
+        logTracking.setContent("Thêm tài khoản mới: " + fullName);
+        logTracking.setTime(LocalDateTime.now());
+        logTrackingService.saveLog(logTracking);
 
         return "redirect:/admin/home";
     }

@@ -24,4 +24,32 @@ public class AnswerServiceImpl implements AnswerService {
 
         return answerRepository.findAnswerByQuestion(question);
     }
+
+    @Override
+    public void addAnswer(Answer answer) {
+        answerRepository.save(answer);
+    }
+
+    @Override
+    public void updateAnswer(Answer answer) {
+        Answer existingAnswer = answerRepository.findByAnswerId(answer.getAnswerId());
+        if (existingAnswer == null) {
+            System.err.println("Answer not found");
+            return;
+        }
+        if (existingAnswer != null) {
+            existingAnswer.setAnswerContent(answer.getAnswerContent());
+            existingAnswer.setCorrect(answer.isCorrect());
+            answerRepository.save(existingAnswer);
+            System.err.println("Answer updated successfully");
+        }
+
+    }
+
+    @Override
+    public Answer getAnswerbyId(int answerId) {
+        return answerRepository.findByAnswerId(answerId);
+    }
+
+
 }
