@@ -9,7 +9,7 @@ import java.util.List;
 public interface QuestionService {
     List<String> getTypeQues();
 
-    Page<Question> getQuesbyType(int pageNo, int key);
+    List<Question> getQuesbyType(int pageNo, int key);
 
     void deleteQues(int quesId);
 

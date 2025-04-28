@@ -26,8 +26,8 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    public Page<Question> getQuesbyType(int pageNo, int key) {
-        return questionReporsitory.findQuestionsByQuestionTypeAndStatus(key, true, PageRequest.of(pageNo - 1, 5));
+    public List<Question> getQuesbyType(int pageNo, int key) {
+        return questionReporsitory.findQuestionsByQuestionTypeAndStatus(key, true);
     }
 
     @Override
