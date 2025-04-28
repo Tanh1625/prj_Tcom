@@ -5,6 +5,7 @@ import com.HE181864.mvc.model.User;
 import com.HE181864.mvc.service.LogTrackingService;
 import com.HE181864.mvc.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -14,6 +15,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 public class AccountController {
@@ -24,55 +27,66 @@ public class AccountController {
     @Autowired
     private LogTrackingService logTrackingService;
 
-    @PostMapping("/update")
-    public String updateAccount(HttpServletRequest request,
-                                Model model,
-                                RedirectAttributes redirectAttributes,
-                                @RequestParam String userId,
-                                @RequestParam String name,
-                                @RequestParam String email,
-                                @RequestParam String employeeId,
-                                @RequestParam String role,
-                                @RequestParam String status
-                                    ) {
+    @GetMapping("/admin/update")
+    @ResponseBody
+    public ResponseEntity<User> updateAccount(HttpServletRequest request,
+                                 Model model,
+                                 @RequestParam String userId) {
+
         User user = userService.getUser(userId);
-        redirectAttributes.addFlashAttribute("userId", userId);
-        redirectAttributes.addFlashAttribute("name", name);
-        redirectAttributes.addFlashAttribute("email", email);
-        redirectAttributes.addFlashAttribute("employeeId", employeeId);
-        redirectAttributes.addFlashAttribute("role", role);
-        redirectAttributes.addFlashAttribute("status", status);
-
         if (user == null) {
-            redirectAttributes.addFlashAttribute("errorUpdate", "Người dùng không tồn tại");
-            return "redirect:/admin/home";
+            return ResponseEntity.notFound().build();
         }
-
-        if(name != null && !name.isEmpty() && email != null && !email.isEmpty() && employeeId != null && !employeeId.isEmpty()) {
-            if (userService.isExitEmail(email) && !user.getEmail().equals(email)) {
-                redirectAttributes.addFlashAttribute("errorUpdate", "Thay đổi thất bại do email đã tồn tại");
-                return "redirect:/admin/home";
-            }
-                userService.updateUser(userId, name, email, employeeId, role, status);
-                redirectAttributes.addFlashAttribute("success", "Thay đổi thành công");
-        }else{
-            redirectAttributes.addFlashAttribute("errorUpdate", "Vui lòng điền đầy đủ thông tin");
-            return "redirect:/admin/home";
-        }
-
-        //logTracking
-        Authentication authen = SecurityContextHolder.getContext().getAuthentication();
-        String emailCur = authen.getName();
-        User userCur = userService.getUserByEmail(emailCur);
-        Logtracking logTracking = new Logtracking();
-        logTracking.setUser(userCur);
-        logTracking.setContent("Cập nhật thông tin tài khoản: " + user.getFullName());
-        logTracking.setTime(LocalDateTime.now());
-        logTrackingService.saveLog(logTracking);
-
-
-        return "redirect:/admin/home";
+        return ResponseEntity.ok(user);
     }
+
+    @PostMapping("/update")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateAccount(
+            @RequestParam String userId,
+            @RequestParam String name,
+            @RequestParam String email,
+            @RequestParam String employeeId,
+            @RequestParam String role,
+            @RequestParam String status
+    ) {
+        Map<String, Object> response = new HashMap<>();
+
+        User user = userService.getUser(userId);
+        if (user == null) {
+            response.put("success", false);
+            response.put("message", "Người dùng không tồn tại");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (name != null && !name.isEmpty() && email != null && !email.isEmpty() && employeeId != null && !employeeId.isEmpty()) {
+            if (userService.isExitEmail(email) && !user.getEmail().equals(email)) {
+                response.put("success", false);
+                response.put("message", "Email đã tồn tại");
+                return ResponseEntity.badRequest().body(response);
+            }
+            userService.updateUser(userId, name, email, employeeId, role, status);
+            response.put("success", true);
+            response.put("message", "Cập nhật thành công");
+
+            // logTracking
+            Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+            String emailCur = authen.getName();
+            User userCur = userService.getUserByEmail(emailCur);
+            Logtracking logTracking = new Logtracking();
+            logTracking.setUser(userCur);
+            logTracking.setContent("Cập nhật thông tin tài khoản: " + user.getFullName());
+            logTracking.setTime(LocalDateTime.now());
+            logTrackingService.saveLog(logTracking);
+
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("message", "Vui lòng điền đầy đủ thông tin");
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
 
     @PostMapping("/delete")
     public String deleteAccount(HttpServletRequest request,
@@ -99,50 +113,64 @@ public class AccountController {
     }
 
     @PostMapping("/changePassword")
-    public String resetPassword(HttpServletRequest request,
-                                 Model model,
-                                 RedirectAttributes redirectAttributes,
-                                 @RequestParam String userId,
-                                @RequestParam String currentPassword,
-                                @RequestParam String newPassword,
-                                @RequestParam String confirmPassword) {
-        redirectAttributes.addFlashAttribute("userId", userId);
-        if(userId != null && !userId.isEmpty()) {
-            if(currentPassword != null && !currentPassword.isEmpty()) {
-                if(!userService.checkCurrentPassword(userId, currentPassword)) {
-                    redirectAttributes.addFlashAttribute("errorChangePass", "Mật khẩu hiện tại không đúng");
-                    return "redirect:/admin/home";
-                }
-            } else {
-                redirectAttributes.addFlashAttribute("errorChangePass", "Vui lòng nhập mật khẩu hiện tại");
-                return "redirect:/admin/home";
-            }
-            if(newPassword != null && !newPassword.isEmpty() && confirmPassword != null && !confirmPassword.isEmpty()) {
-                if(newPassword.equals(confirmPassword)) {
-                    userService.resetPassword(userId, newPassword);
-                    redirectAttributes.addFlashAttribute("success", "Đổi mật khẩu thành công");
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> changePassword(
+            @RequestParam String userId,
+            @RequestParam String currentPassword,
+            @RequestParam String newPassword,
+            @RequestParam String confirmPassword
+    ) {
+        Map<String, Object> response = new HashMap<>();
 
-
-                    // logTracking
-                    Authentication authen = SecurityContextHolder.getContext().getAuthentication();
-                    String emailCur = authen.getName();
-                    User userCur = userService.getUserByEmail(emailCur);
-                    User userReset = userService.getUser(userId);
-                    Logtracking logTracking = new Logtracking();
-                    logTracking.setUser(userCur);
-                    logTracking.setContent("Đổi mật khẩu cho tài khoản: " + (userReset != null ? userReset.getFullName() : "Unknown User"));
-                    logTracking.setTime(LocalDateTime.now());
-                    logTrackingService.saveLog(logTracking);
-
-                } else {
-                    redirectAttributes.addFlashAttribute("errorChangePass", "Mật khẩu không khớp");
-                }
-            } else {
-                redirectAttributes.addFlashAttribute("errorChangePass", "Vui lòng nhập mật khẩu mới và xác nhận mật khẩu");
-            }
+        if (userId == null || userId.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Thiếu userId");
+            return ResponseEntity.badRequest().body(response);
         }
-        return "redirect:/admin/home";
+
+        if (currentPassword == null || currentPassword.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Vui lòng nhập mật khẩu hiện tại");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (!userService.checkCurrentPassword(userId, currentPassword)) {
+            response.put("success", false);
+            response.put("message", "Mật khẩu hiện tại không đúng");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (newPassword == null || newPassword.isEmpty() || confirmPassword == null || confirmPassword.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Vui lòng nhập mật khẩu mới và xác nhận mật khẩu");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            response.put("success", false);
+            response.put("message", "Mật khẩu mới và mật khẩu xác nhận không khớp");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // Cập nhật mật khẩu
+        userService.resetPassword(userId, newPassword);
+        response.put("success", true);
+        response.put("message", "Đổi mật khẩu thành công");
+
+        // Ghi logTracking
+        Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+        String emailCur = authen.getName();
+        User userCur = userService.getUserByEmail(emailCur);
+        User userReset = userService.getUser(userId);
+        Logtracking logTracking = new Logtracking();
+        logTracking.setUser(userCur);
+        logTracking.setContent("Đổi mật khẩu cho tài khoản: " + (userReset != null ? userReset.getFullName() : "Unknown User"));
+        logTracking.setTime(LocalDateTime.now());
+        logTrackingService.saveLog(logTracking);
+
+        return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/admin/addUser")
     public String addUser(HttpServletRequest request,

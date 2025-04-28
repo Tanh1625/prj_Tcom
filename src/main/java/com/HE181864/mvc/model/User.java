@@ -1,6 +1,8 @@
 package com.HE181864.mvc.model;
 
 import com.HE181864.mvc.model.Enum.Status;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,6 +31,7 @@ public class User {
 
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false)
+    @JsonManagedReference
     private Role role;
 
     @Enumerated(EnumType.STRING)
@@ -36,9 +39,11 @@ public class User {
     private Status status;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
     private List<Logtracking> logtrackings;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
     private List<Question> questions;
 
 

@@ -11,6 +11,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 public class UserServiceImpl implements UserService {
     @Autowired
@@ -121,6 +125,28 @@ public class UserServiceImpl implements UserService {
         user.setStatus(Status.ACTIVE);
         userRepository.save(user);
     }
+
+    @Override
+    public List<String> findSuggestions(String query) {
+        return userRepository.findByFullNameContainingIgnoreCaseAndStatusNot(query, Status.DELETED)
+                .stream()
+                .map(User::getFullName)
+                .distinct()
+                .limit(5)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<User> findPaginatedUsers(String search, int pageNo, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNo - 1, pageSize);
+
+        if (search == null || search.trim().isEmpty()) {
+            return userRepository.findByStatusNot(Status.DELETED, pageable);
+        } else {
+            return userRepository.searchActiveUsers(search, Status.DELETED, pageable);
+        }
+    }
+
 
 
 }

@@ -4,6 +4,8 @@ import com.HE181864.mvc.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface UserService {
     boolean isExitUSName(String username);
     boolean isExitEmail(String email);
@@ -26,4 +28,8 @@ public interface UserService {
     Page<User> getUsersByName(int pageNo, String search);
 
     void addUser(String fullName, String password, String email, String role);
+
+    List<String> findSuggestions(String query);
+
+    Page<User> findPaginatedUsers(String search, int pageNo, int pageSize);
 }

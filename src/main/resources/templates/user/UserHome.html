@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css?family=Material+Icons+Round" rel="stylesheet">
+    <!-- OR Material Symbols -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+    <title>Trang chủ</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-purple-50">
+<div class="container mx-auto p-4 max-w-7xl">
+
+    <div th:replace="fragment/UserNavbar :: userNavbar"></div>
+
+
+    <div class="bg-white p-4 rounded-lg shadow-md">
+        <nav class="flex items-center space-x-1 text-gray-500 text-sm mb-10 select-none">
+            <i class="fas fa-home"></i>
+            <svg
+                    class="w-3 h-3 mx-2"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+            >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+            </svg>
+            <span class="text-gray-700 font-semibold">Lịch sử của tôi</span>
+        </nav>
+        <!-- Main content -->
+        <main class="px-6 py-6 max-w-7xl mx-auto">
+            <div class="flex justify-end mb-4">
+                <a th:href="@{/user/examList}"
+                   class="bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Làm bài kiểm tra
+                </a>
+
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full border border-gray-200 rounded-lg overflow-hidden">
+                    <thead class="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase font-semibold select-none">
+                    <tr>
+                        <th class="py-3 px-4 text-left border-r border-gray-200 w-12">
+                            STT
+                        </th>
+                        <th class="py-3 px-4 text-left border-r border-gray-200 min-w-[120px]">
+                            NGÀY KIỂM TRA
+                        </th>
+                        <th class="py-3 px-4 text-center border-r border-gray-200 w-16">
+                            D
+                        </th>
+                        <th class="py-3 px-4 text-center border-r border-gray-200 w-16">
+                            I
+                        </th>
+                        <th class="py-3 px-4 text-center border-r border-gray-200 w-16">
+                            S
+                        </th>
+                        <th class="py-3 px-4 text-center w-16">
+                            C
+                        </th>
+                    </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                    <tr class="bg-white border-b border-gray-100">
+                        <td class="py-3 px-4 font-semibold border-r border-gray-100">
+                            1
+                        </td>
+                        <td class="py-3 px-4 border-r border-gray-100">
+                            02/12/2024
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500">
+                            +3
+                        </td>
+                    </tr>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <td class="py-3 px-4 font-semibold border-r border-gray-100">
+                            2
+                        </td>
+                        <td class="py-3 px-4 border-r border-gray-100">
+                            02/05/2024
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400">
+                            -2
+                        </td>
+                    </tr>
+                    <tr class="bg-white border-b border-gray-100">
+                        <td class="py-3 px-4 font-semibold border-r border-gray-100">
+                            3
+                        </td>
+                        <td class="py-3 px-4 border-r border-gray-100">
+                            02/01/2024
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500">
+                            +3
+                        </td>
+                    </tr>
+                    <tr class="bg-gray-50 border-b border-gray-100">
+                        <td class="py-3 px-4 font-semibold border-r border-gray-100">
+                            4
+                        </td>
+                        <td class="py-3 px-4 border-r border-gray-100">
+                            02/01/2024
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400">
+                            -2
+                        </td>
+                    </tr>
+                    <tr class="bg-white border-b border-gray-100">
+                        <td class="py-3 px-4 font-semibold border-r border-gray-100">
+                            5
+                        </td>
+                        <td class="py-3 px-4 border-r border-gray-100">
+                            02/01/2024
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500 border-r border-gray-100">
+                            +3
+                        </td>
+                        <td class="py-3 px-4 text-center text-green-500">
+                            +3
+                        </td>
+                    </tr>
+                    <tr class="bg-gray-50">
+                        <td class="py-3 px-4 font-semibold border-r border-gray-100">
+                            6
+                        </td>
+                        <td class="py-3 px-4 border-r border-gray-100">
+                            02/01/2024
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400 border-r border-gray-100">
+                            -2
+                        </td>
+                        <td class="py-3 px-4 text-center text-orange-400">
+                            -2
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
