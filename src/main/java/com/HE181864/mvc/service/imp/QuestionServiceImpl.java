@@ -1,7 +1,9 @@
 package com.HE181864.mvc.service.imp;
 
+import com.HE181864.mvc.model.Exam;
 import com.HE181864.mvc.model.Question;
 import com.HE181864.mvc.model.User;
+import com.HE181864.mvc.repository.ExamRepository;
 import com.HE181864.mvc.repository.QuestionReporsitory;
 import com.HE181864.mvc.repository.UserRepository;
 import com.HE181864.mvc.service.QuestionService;
@@ -19,6 +21,8 @@ public class QuestionServiceImpl implements QuestionService {
     private QuestionReporsitory questionReporsitory;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private ExamRepository examRepository;
 
     @Override
     public List<String> getTypeQues() {
@@ -26,7 +30,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    public List<Question> getQuesbyType(int pageNo, int key) {
+    public List<Question> getQuesbyType(int key) {
         return questionReporsitory.findQuestionsByQuestionTypeAndStatus(key, true);
     }
 
@@ -47,12 +51,22 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public void addQues(String quesContent, int quesType, String email) {
         User user = userRepository.findUserByEmail(email);
+        Exam exam = examRepository.findExamByExamId(quesType);
+        if(exam == null) {
+            System.out.println("Exam not found");
+            Exam exam1 = new Exam();
+            exam1.setExamId(quesType);
+            exam1.setExamName("Bộ câu hỏi số " + quesType);
+            examRepository.save(exam1);
+            exam = exam1;
+        }
         Question ques = new Question();
         ques.setQuestionContent(quesContent);
         ques.setQuestionType(quesType);
         ques.setStatus(true);
         ques.setTotalScore(1);
         ques.setUser(user);
+        ques.setExam(exam);
         questionReporsitory.save(ques);
         System.out.println("Done add new question");
     }

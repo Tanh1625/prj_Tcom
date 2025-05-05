@@ -1,0 +1,98 @@
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1" name="viewport"/>
+    <title>Trang Thi Trắc Nghiệm Online</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/userCss/DoExam.css">
+
+</head>
+<body>
+<header>
+    <div class="container mx-auto px-3">
+        <img
+                alt="Logo trang thi trắc nghiệm online"
+                src="/images/logo.png"
+                width="40"
+                height="40"
+        />
+        <h1 id="titleExam"></h1>
+    </div>
+</header>
+<main class="container mx-auto px-3 py-4 d-flex flex-column flex-md-row gap-4">
+    <!-- Sidebar chọn câu hỏi -->
+    <aside
+            class="bg-white rounded shadow-sm p-3"
+            style="min-width: 180px;"
+            aria-label="Chọn câu hỏi"
+    >
+        <h3 class="text-center fw-semibold mb-3">Chọn Câu Hỏi</h3>
+
+<!--         Danh sách câu hỏi sẽ được tạo động bằng JavaScript -->
+
+        <ul id="question-nav" role="list" aria-label="Danh sách câu hỏi"></ul>
+
+
+
+        <button
+                id="end-test-btn"
+                type="button"
+                class="btn btn-danger w-100 mt-3"
+                aria-label="Kết thúc bài kiểm tra"
+        >
+            <i class="fas fa-flag-checkered me-2"></i>Kết Thúc Bài Kiểm Tra
+        </button>
+    </aside>
+    <!-- Nội dung câu hỏi -->
+    <section
+            class="flex-grow bg-white rounded shadow-sm p-4"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-relevant="additions"
+    >
+        <div
+                class="d-flex flex-column flex-sm-row justify-content-between align-items-center mb-4"
+        >
+            <h2 class="h4 mb-3 mb-sm-0" id="quiz-title">
+            </h2>
+            <div class="text-muted d-flex align-items-center gap-2 fs-6">
+                <i class="far fa-clock"></i>
+                <span id="timer-text"></span>
+            </div>
+        </div>
+        <form id="quiz-form" aria-label="Form thi trắc nghiệm" class="mb-3">
+            <div class="d-flex justify-content-center">
+                <button
+                        type="button"
+                        id="next-question-btn"
+                        class="btn btn-primary px-3"
+                        aria-label="Chuyển câu hỏi tiếp theo"
+                >
+                    Câu Tiếp Theo <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </form>
+    </section>
+    <!-- Mục tổng điểm -->
+    <aside
+            id="score-container"
+            class="bg-white rounded shadow-sm p-4 mx-auto d-none"
+            style="width: 320px;"
+            aria-label="Tổng điểm và thời gian làm bài"
+    >
+
+    </aside>
+
+</main>
+<footer>
+    <div class="container">
+        © 2025 Thi Trắc Nghiệm Online. Bản quyền thuộc về ....
+    </div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="/js/userJs/DoExam.js"></script>
+</body>
+</html>

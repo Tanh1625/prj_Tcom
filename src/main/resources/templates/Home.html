@@ -48,25 +48,33 @@
         </nav>
 
 
-        <!-- Smaller search bar with icon -->
-        <div class="flex justify-end mb-4 relative">
-            <div class="w-64 relative">
-                <input
-                        id="searchInput"
-                        name="search"
-                        class="w-full p-1.5 pl-8 border border-gray-300 rounded-lg text-sm"
-                        placeholder="Search"
-                        type="text"
-                        th:value="${search}"
-                />
+        <!-- Flex container for search bar and add user button in one row -->
+        <div class="flex justify-between mb-4">
+
+            <!-- Search-->
+            <div class="flex items-center w-64 relative">
+                <input id="searchInput" name="search" class="w-full p-1.5 pl-8 border border-gray-300 rounded-lg text-sm"
+                       placeholder="Search" type="text" th:value="${search}"/>
                 <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">
                     <i class="fas fa-search"></i>
                 </span>
+                <button id="submitBtn"
+                        type="submit"
+                        class="bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-search"></i>
+                    <span class="sr-only">Search</span>
+                </button>
                 <div id="suggestions"
-                     class="absolute z-10 bg-white border border-gray-300 rounded-lg mt-1 w-full hidden max-h-60 overflow-y-auto text-sm shadow-md">
+                     class="absolute left-0 top-full z-10 bg-white border border-gray-300 rounded-lg mt-1 w-full hidden max-h-60 overflow-y-auto text-sm shadow-md">
                 </div>
             </div>
+
+            <!-- Add User -->
+            <a href="/admin/addUser" class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md">
+                Thêm Người Dùng
+            </a>
         </div>
+
 
         <!-- User Table -->
         <div id="userTableContainer">

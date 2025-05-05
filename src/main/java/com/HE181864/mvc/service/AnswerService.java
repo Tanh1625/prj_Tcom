@@ -12,4 +12,6 @@ public interface AnswerService {
     void updateAnswer(Answer answer);
 
     Answer getAnswerbyId(int answerId);
+
+    boolean isCorrectAnswer(int i);
 }

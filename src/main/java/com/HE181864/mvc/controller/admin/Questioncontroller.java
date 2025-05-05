@@ -1,13 +1,7 @@
 package com.HE181864.mvc.controller.admin;
 
-import com.HE181864.mvc.model.Answer;
-import com.HE181864.mvc.model.Logtracking;
-import com.HE181864.mvc.model.Question;
-import com.HE181864.mvc.model.User;
-import com.HE181864.mvc.service.AnswerService;
-import com.HE181864.mvc.service.LogTrackingService;
-import com.HE181864.mvc.service.QuestionService;
-import com.HE181864.mvc.service.UserService;
+import com.HE181864.mvc.model.*;
+import com.HE181864.mvc.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -38,12 +32,17 @@ public class Questioncontroller {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private ExamService examService;
 
 
     @GetMapping("/admin/question")
     public String question(HttpServletRequest request,
                            Model model,
                            @ModelAttribute("search") String search) {
+        List<Exam> examList = examService.getAllExam();
+        model.addAttribute("examList", examList);
+
         List<String> questionTypes = questionService.getTypeQues();
         model.addAttribute("questionTypes", questionTypes);
         return "admin/ManageQues";
@@ -61,7 +60,7 @@ public class Questioncontroller {
         model.addAttribute("userId", email);
 
 
-        List<Question> questionList = questionService.getQuesbyType(pageNo, key);
+        List<Question> questionList = questionService.getQuesbyType(key);
         System.err.println(questionList.size());
         model.addAttribute("totalQues", questionList.size());
         model.addAttribute("questionTypes", key);
@@ -177,6 +176,7 @@ public class Questioncontroller {
             questionData.put("questionId", ques.getQuestionId());
             questionData.put("questionContent", ques.getQuestionContent());
             questionData.put("questionType", ques.getQuestionType());
+            questionData.put("examName", ques.getExam().getExamName());
 
             response.put("success", true);
             response.put("message", "Thêm câu hỏi thành công");
