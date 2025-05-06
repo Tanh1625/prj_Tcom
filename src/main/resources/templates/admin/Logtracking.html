@@ -63,45 +63,20 @@
                     <th class="border border-gray-300 py-3 px-4 text-left">Nội dung</th>
                 </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableHistory">
                 <!-- Mẫu dữ liệu, sẽ được thay thế bằng dữ liệu thực từ server -->
-                <tr class="hover:bg-gray-50" th:each="activity, index : ${logTrackingList}">
-                    <td class="border border-gray-300 py-3 px-4" th:text="${index.count + (currentPage-1)*10}">1</td>
-                    <td class="border border-gray-300 py-3 px-4" th:text="${activity.time}">2023-10-15 14:30:22</td>
-                    <td class="border border-gray-300 py-3 px-4" th:text="${activity.content}">
-                        Thêm câu hỏi mới vào bộ câu hỏi số 2
-                    </td>
-                </tr>
                 </tbody>
             </table>
+            <!-- Pagination -->
+            <div style="margin-top: 20px;" id="paginational"></div>
         </div>
 
-        <!-- Pagination -->
-        <div class="flex justify-center mt-6">
-            <nav aria-label="Page navigation">
-                <ul class="flex list-none">
-                    <li th:if="${currentPage > 1}">
-                        <a th:href="@{/admin/logtracking(page=${currentPage - 1})}"
-                           class="px-3 py-2 mx-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-chevron-left text-xs"></i>
-                        </a>
-                    </li>
-                    <li th:each="i : ${#numbers.sequence(1, totalPage)}">
-                        <a th:href="@{/admin/logtracking(page=${i})}"
-                           th:class="${i == currentPage ? 'px-3 py-2 mx-1 border border-blue-500 bg-blue-500 rounded-md text-sm text-white' : 'px-3 py-2 mx-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100'}"
-                           th:text="${i}">1</a>
-                    </li>
-                    <li th:if="${currentPage < totalPage}">
-                        <a th:href="@{/admin/logtracking(page=${currentPage + 1})}"
-                           class="px-3 py-2 mx-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100">
-                            <i class="fas fa-chevron-right text-xs"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
     </div>
+
+
+
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/adminJs/locgtracking.js"></script>
 </body>
 </html>

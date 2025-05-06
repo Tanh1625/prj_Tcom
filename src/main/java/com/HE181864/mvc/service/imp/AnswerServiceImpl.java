@@ -51,5 +51,10 @@ public class AnswerServiceImpl implements AnswerService {
         return answerRepository.findByAnswerId(answerId);
     }
 
+    @Override
+    public boolean isCorrectAnswer(int i) {
+        return answerRepository.findByAnswerId(i).isCorrect();
+    }
+
 
 }

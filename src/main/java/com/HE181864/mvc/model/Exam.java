@@ -1,5 +1,8 @@
 package com.HE181864.mvc.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import javax.persistence.*;
 import java.util.List;
 
@@ -12,15 +15,25 @@ public class Exam {
     private int examId;
     @Column(name = "exam_name", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String examName;
-    @Column(name = "exam_time", nullable = false)
-    private int examTime;
 
 
-    @ManyToMany(mappedBy = "exams", cascade = CascadeType.ALL)
+
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
     private List<Question> questions;
+
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
+    private List<ExamHistory> examHistories;
 
 
     public Exam() {
+    }
+
+    public Exam(int examId, String examName, List<Question> questions) {
+        this.examId = examId;
+        this.examName = examName;
+        this.questions = questions;
     }
 
     public int getExamId() {
@@ -39,26 +52,11 @@ public class Exam {
         this.examName = examName;
     }
 
-    public int getExamTime() {
-        return examTime;
-    }
-
-    public void setExamTime(int examTime) {
-        this.examTime = examTime;
-    }
-
     public List<Question> getQuestions() {
         return questions;
     }
 
     public void setQuestions(List<Question> questions) {
-        this.questions = questions;
-    }
-
-    public Exam(int examId, String examName, int examTime, List<Question> questions) {
-        this.examId = examId;
-        this.examName = examName;
-        this.examTime = examTime;
         this.questions = questions;
     }
 }

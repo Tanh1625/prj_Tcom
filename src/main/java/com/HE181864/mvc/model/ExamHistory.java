@@ -1,5 +1,9 @@
 package com.HE181864.mvc.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
@@ -11,8 +15,9 @@ public class ExamHistory {
     @Column(name = "exam_history_id", nullable = false)
     private int examHistoryId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "exam_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JsonManagedReference
+    @JoinColumn(name = "exam_id",nullable = true)
     private Exam exam;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

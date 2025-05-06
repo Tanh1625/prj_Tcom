@@ -29,24 +29,12 @@ public class Question {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToMany
-    @JoinTable(name = "exam_question",
-            joinColumns = @JoinColumn(name = "question_id"),
-            inverseJoinColumns = @JoinColumn(name = "exam_id"))
-    private List<Exam> exams;
+    @ManyToOne
+    @JsonManagedReference
+    @JoinColumn(name = "exam_id", nullable = false)
+    private Exam exam;
 
     public Question() {
-    }
-
-    public Question(int questionId, String questionContent, int questionType, double totalScore, boolean status, List<Answer> answers, User user, List<Exam> exams) {
-        this.questionId = questionId;
-        this.questionContent = questionContent;
-        this.questionType = questionType;
-        this.totalScore = totalScore;
-        this.status = status;
-        this.answers = answers;
-        this.user = user;
-        this.exams = exams;
     }
 
     public int getQuestionId() {
@@ -105,11 +93,22 @@ public class Question {
         this.user = user;
     }
 
-    public List<Exam> getExams() {
-        return exams;
+    public Exam getExam() {
+        return exam;
     }
 
-    public void setExams(List<Exam> exams) {
-        this.exams = exams;
+    public void setExam(Exam exam) {
+        this.exam = exam;
+    }
+
+    public Question(int questionId, String questionContent, int questionType, double totalScore, boolean status, List<Answer> answers, User user, Exam exam) {
+        this.questionId = questionId;
+        this.questionContent = questionContent;
+        this.questionType = questionType;
+        this.totalScore = totalScore;
+        this.status = status;
+        this.answers = answers;
+        this.user = user;
+        this.exam = exam;
     }
 }

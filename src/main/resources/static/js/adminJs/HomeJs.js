@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const query = this.value.trim();
         clearTimeout(searchTimeout);
 
-        if (query.length < 2) {
+        if (query.length < 1) {
             suggestionsBox.innerHTML = '';
             suggestionsBox.classList.add('hidden');
             return;
@@ -54,6 +54,13 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             suggestionsBox.classList.add('hidden');
             performSearch(this.value.trim());
+        }
+    });
+    const searchButton = document.getElementById('submitBtn');
+    searchButton.addEventListener('click', function () {
+        const query = input.value.trim();
+        if (query.length > 0) {
+            performSearch(query);
         }
     });
 
