@@ -1,7 +1,18 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Initial setup of event listeners
+    let pageSize = document.getElementById("selectPageSize");
     setupEventListeners();
-    setupPaginationListeners();
+    loadUserData(1, '', 10);
+    console.log("pageSize: " + pageSize.value);
+    let valuePage = pageSize.value;
+
+    pageSize.addEventListener("change", () => {
+        valuePage = pageSize.value;
+        console.log("value", valuePage);
+        loadUserData(1, '', valuePage);
+    })
+
+
 
     // Search functionality with AJAX
     const input = document.getElementById('searchInput');
@@ -33,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 input.value = item;
                                 suggestionsBox.classList.add('hidden');
                                 // Search with the selected suggestion
-                                performSearch(item);
+                                performSearch(item, pageSize.value);
                             });
                             suggestionsBox.appendChild(div);
                         });
@@ -53,14 +64,14 @@ document.addEventListener('DOMContentLoaded', function () {
         if (e.key === 'Enter') {
             e.preventDefault();
             suggestionsBox.classList.add('hidden');
-            performSearch(this.value.trim());
+            performSearch(this.value.trim(), pageSize.value);
         }
     });
     const searchButton = document.getElementById('submitBtn');
     searchButton.addEventListener('click', function () {
         const query = input.value.trim();
         if (query.length > 0) {
-            performSearch(query);
+            performSearch(query, pageSize.value);
         }
     });
 
@@ -73,9 +84,10 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Function to perform search
-function performSearch(query) {
+function performSearch(query, pageSize) {
+
     if (query) {
-        loadUserData(1, query);
+        loadUserData(1, query, pageSize);
     }
 }
 
@@ -182,19 +194,19 @@ function closeDeleteModal() {
 }
 
 // Function to setup pagination event listeners
-function setupPaginationListeners() {
+function setupPaginationListeners(pageSize) {
     document.querySelectorAll('.pagination-link').forEach(link => {
         link.addEventListener('click', function (e) {
             e.preventDefault();
             const page = this.getAttribute('data-page');
             const search = this.getAttribute('data-search') || document.getElementById('searchInput').value.trim();
-            loadUserData(page, search);
+            loadUserData(page, search, pageSize);
         });
     });
 }
 
 // Function to load user data via AJAX
-function loadUserData(page, search) {
+function loadUserData(page, search, pageSize) {
     // Show loading indicator
     const tableBody = document.getElementById('userTableBody');
     tableBody.innerHTML = `
@@ -208,11 +220,11 @@ function loadUserData(page, search) {
                 </tr>
             `;
 
-    fetch(`/api/users?pageNo=${page}&search=${encodeURIComponent(search || '')}`)
+    fetch(`/api/users?pageNo=${page}&search=${encodeURIComponent(search || '')}&pageSize=${pageSize || 20}`)
         .then(response => response.json())
         .then(data => {
-            updateTable(data.users, data.currentPage);
-            updatePagination(data.currentPage, data.totalPage, search);
+            updateTable(data.users, data.currentPage, pageSize);
+            updatePagination(data.currentPage, data.totalPage, search,pageSize);
 
             // // Đoạn này để thay đổi URl bật nếu muốn
             // const url = new URL(window.location);
@@ -234,7 +246,7 @@ function loadUserData(page, search) {
 }
 
 // Function to update the table with new user data
-function updateTable(users, currentPage) {
+function updateTable(users, currentPage, pageSize) {
     const tableBody = document.getElementById('userTableBody');
     tableBody.innerHTML = '';
 
@@ -255,7 +267,7 @@ function updateTable(users, currentPage) {
         // STT column
         const sttCell = document.createElement('td');
         sttCell.className = 'py-3 px-4 border-b';
-        sttCell.textContent = index + 1 + ((currentPage - 1) * 10);
+        sttCell.textContent = index + 1 + ((currentPage - 1) * pageSize);
         row.appendChild(sttCell);
 
         // Name column
@@ -340,7 +352,7 @@ function updateTable(users, currentPage) {
 }
 
 // Function to update pagination
-function updatePagination(currentPage, totalPage, search) {
+function updatePagination(currentPage, totalPage, search, pageSize) {
     const paginationContainer = document.getElementById('paginationContainer');
     if (totalPage < 1) {
         paginationContainer.innerHTML = '';
@@ -384,7 +396,7 @@ function updatePagination(currentPage, totalPage, search) {
     paginationHTML += '</ul>';
 
     paginationContainer.innerHTML = paginationHTML;
-    setupPaginationListeners();
+    setupPaginationListeners(pageSize);
 }
 
 // submit form delete không cần load trang

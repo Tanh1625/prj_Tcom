@@ -1,12 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const pageSize = document.getElementById("selectPageSize");
+    loadData(pageNo=1,pageSize.value);
 
-    loadData(pageNo=1);
+    pageSize.addEventListener("change", () => {
+        const value = pageSize.value;
+        loadData(pageNo=1, value);
+    })
 });
 
 
-async function loadData(pageNo) {
+async function loadData(pageNo, pageSize) {
     try {
-        const response = await fetch(`/admin/logtracking1?pageNo=${pageNo}`, {
+        const response = await fetch(`/admin/logtracking1?pageNo=${pageNo}&pageSize=${pageSize}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -15,8 +20,8 @@ async function loadData(pageNo) {
         if(response.ok) {
             const data = await response.json();
             console.log(data);
-            renderTableHistory(data);
-            renderPaginational(data.currentPage,data.totalPage);
+            renderTableHistory(data, pageSize);
+            renderPaginational(data.currentPage,data.totalPage, pageSize);
             console.log("oke rồi");
         } else {
             const errorData = await response.json();
@@ -31,7 +36,7 @@ async function loadData(pageNo) {
 }
 
 
-function renderTableHistory(data) {
+function renderTableHistory(data, pageSize) {
     const tablebody = document.getElementById("tableHistory");
     tablebody.innerHTML = ""; // Clear previous data
     const historyList = data.logTrackingList;
@@ -41,7 +46,7 @@ function renderTableHistory(data) {
     for(let i =0; i< content.length; i++){
         const row = document.createElement("tr");
         row.innerHTML = `
-                    <td class="border border-gray-300 py-3 px-4">${(currentPage-1)*10+i+1}</td>
+                    <td class="border border-gray-300 py-3 px-4">${(currentPage-1)*pageSize+i+1}</td>
                     <td class="border border-gray-300 py-3 px-4">${formatDateTime(content[i].time)}</td>
                     <td class="border border-gray-300 py-3 px-4">${content[i].content}</td>
         `;
@@ -49,8 +54,7 @@ function renderTableHistory(data) {
     }
 }
 
-
-
+// Hàm định dạng ngày giờ
 function formatDateTime(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('vi-VN',{
@@ -67,51 +71,77 @@ function formatDateTime(dateString) {
 
 
 // phân trang
-function renderPaginational(currentPage, totalPage){
+function renderPaginational(currentPage, totalPage, pageSize) {
     const paginational = document.getElementById("paginational");
-    paginational.innerHTML = ""; // Clear previous data
-    paginational.classList.add('pagination-sm', 'no-margin', 'float-end', 'square-pagination', 'flex', 'justify-end', 'space-x-1');
+    paginational.innerHTML = "";
 
     const pagination = document.createElement("ul");
-    pagination.classList.add('flex', 'justify-center', 'items-center', 'space-x-1');
+    pagination.className = "pagination pagination-sm mb-0";
 
-    if(currentPage > 1){
-        const prev_item = document.createElement("li");
-        const prevItem = document.createElement("a");
-        prevItem.setAttribute("href", "javascript:void(0)");
-        prevItem.classList.add('py-2', 'px-3', 'border', 'border-gray-300', 'rounded');
-        prevItem.textContent = '«';
-        prevItem.onclick = ()=> loadData(currentPage-1);
-        prev_item.appendChild(prevItem);
-        pagination.appendChild(prev_item);
+    // Prev button
+    if (currentPage > 1) {
+        pagination.appendChild(createPageItem("«", currentPage - 1, pageSize));
     }
 
-    for(let i = 1; i <= totalPage; i++){
-        const page_item = document.createElement("li");
-        const item = document.createElement("a");
-        item.setAttribute("href", "javascript:void(0)");
-        item.classList.add('py-2', 'px-3', 'border', 'border-gray-300', 'rounded');
-        item.textContent = i;
-        item.onclick = () => loadData(i);
-        if(i === currentPage){
-            item.classList.add('bg-blue-500', 'text-white');
+    // Always show first page
+    pagination.appendChild(createPageItem(1, 1, pageSize, currentPage === 1));
+
+    // Show leading dots
+    if (currentPage > 3) {
+        pagination.appendChild(createEllipsisItem());
+    }
+
+    // Show 3 pages around currentPage
+    for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+        if (i > 1 && i < totalPage) {
+            pagination.appendChild(createPageItem(i, i, pageSize, i === currentPage));
         }
-        page_item.appendChild(item);
-        pagination.appendChild(page_item);
     }
 
-    if(currentPage < totalPage){
-        const next_item = document.createElement("li");
-        const nextItem = document.createElement("a");
-        nextItem.setAttribute("href", "javascript:void(0)");
-        nextItem.classList.add('py-2', 'px-3', 'border', 'border-gray-300', 'rounded');
-        nextItem.textContent = '»';
-        nextItem.onclick = () => loadData(currentPage+1);
-        next_item.appendChild(nextItem);
-        pagination.appendChild(next_item);
+    // Show trailing dots
+    if (currentPage < totalPage - 2) {
+        pagination.appendChild(createEllipsisItem());
     }
+
+    // Always show last page
+    if (totalPage > 1) {
+        pagination.appendChild(createPageItem(totalPage, totalPage, pageSize, currentPage === totalPage));
+    }
+
+    // Next button
+    if (currentPage < totalPage) {
+        pagination.appendChild(createPageItem("»", currentPage + 1, pageSize));
+    }
+
     paginational.appendChild(pagination);
 }
+
+function createPageItem(text, pageNo, pageSize, isActive = false) {
+    const li = document.createElement("li");
+    li.className = `page-item ${isActive ? 'active' : ''}`;
+
+    const a = document.createElement("a");
+    a.className = "page-link";
+    a.href = "javascript:void(0)";
+    a.textContent = text;
+    a.onclick = () => loadData(pageNo, pageSize);
+
+    li.appendChild(a);
+    return li;
+}
+
+function createEllipsisItem() {
+    const li = document.createElement("li");
+    li.className = "page-item disabled";
+
+    const span = document.createElement("span");
+    span.className = "page-link";
+    span.textContent = "...";
+
+    li.appendChild(span);
+    return li;
+}
+
 
 // Hiển thị thông báo thành công hay thất bại
 function showNotification(title, message, type) {

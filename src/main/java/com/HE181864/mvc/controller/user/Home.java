@@ -51,13 +51,14 @@ public class Home {
     @GetMapping("/home1")
     @Transactional
     public ResponseEntity<Map<String, Object>> home1(Model model,
-                                     @RequestParam(value = "pageNo", defaultValue = "1") int page){
+                                     @RequestParam(value = "pageNo", defaultValue = "1") int page,
+                                     @RequestParam(value = "pageSize", defaultValue = "5") int pageSize) {
         Map<String, Object> response = new HashMap<>();
         Authentication authen = SecurityContextHolder.getContext().getAuthentication();
         String emailCur = authen.getName();
         User userCur = userService.getUserByEmail(emailCur);
 
-        Page<ExamHistory> examHistoryList = examHistoryService.getExamHistoryPagination(userCur, page, 5);
+        Page<ExamHistory> examHistoryList = examHistoryService.getExamHistoryPagination(userCur, page, pageSize);
         model.addAttribute("examHistoryList", examHistoryList);
 
         if(examHistoryList.isEmpty()) {

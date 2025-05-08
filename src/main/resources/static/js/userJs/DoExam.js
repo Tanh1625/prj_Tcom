@@ -1,6 +1,7 @@
-
-
-
+document.addEventListener("DOMContentLoaded", () => {
+    loadData();
+    activateExamMode();
+});
 // Constants
 const quizForm = document.getElementById("quiz-form");
 let questionNavButtons = document.querySelectorAll(".question-nav-btn");
@@ -139,7 +140,7 @@ endTestBtn.addEventListener("click", () => {
 
             const form = document.getElementById("quiz-form");
             const formData = new FormData(form);
-            for(const [key, value] of formData.entries()) {
+            for (const [key, value] of formData.entries()) {
                 submit.answers[key] = value;
             }
 
@@ -151,7 +152,7 @@ endTestBtn.addEventListener("click", () => {
                 },
                 body: JSON.stringify(submit),
             }).then(response => {
-                if(response.ok) {
+                if (response.ok) {
                     console.log("Đã gửi câu trả lời thành công.");
                     return response.json();
 
@@ -164,10 +165,10 @@ endTestBtn.addEventListener("click", () => {
                 console.log("Số câu đúng: ", data.numCorrect);
                 console.log("Tổng số câu: ", data.totalType);
             })
-            .catch(error => {
-                console.error("Lỗi khi gửi câu trả lời:", error);
-                alert("Đã xảy ra lỗi khi gửi câu trả lời.");
-            })
+                .catch(error => {
+                    console.error("Lỗi khi gửi câu trả lời:", error);
+                    alert("Đã xảy ra lỗi khi gửi câu trả lời.");
+                })
 
             // vô hiệu hóa  form
             testEnded = true;
@@ -200,13 +201,10 @@ function disableForm() {
     endTestBtn.classList.add("disabled");
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    loadData();
-
-});
 
 const keyExam = sessionStorage.getItem("key");
 const startTime = sessionStorage.getItem("startTime");
+
 async function loadData() {
     //load câu hỏi từ server
     try {
@@ -216,7 +214,7 @@ async function loadData() {
                 "Content-Type": "application/json",
             },
         });
-        if(!response.ok) {
+        if (!response.ok) {
             throw new Error("Network response was not ok");
         }
         const data = await response.json();
@@ -228,7 +226,6 @@ async function loadData() {
         title2.textContent = "Bài kiểm tra: " + data[0].questionType;
 
         rendertime(data.length);
-
 
 
         // Render questions
@@ -244,26 +241,35 @@ async function loadData() {
 
     } catch (error) {
         console.log("lỗi lấy dữ liệu câu hỏi: ", error);
-        alert("Bộ câu hỏi "+ keyExam+" hiện không khả dụng");
+        alert("Bộ câu hỏi " + keyExam + " hiện không khả dụng");
         window.location.href = "/user/examList";
     }
 }
+
+let timer = null;
 
 function rendertime(totalTime) {
     const timeDo = document.getElementById("timer-text");
     let timeLeft = totalTime * 60;
 
     // Set the timer
-    const timer = setInterval(() => {
+    timer = setInterval(() => {
         const minute = Math.floor(timeLeft / 60);
         const second = timeLeft % 60;
-        timeDo.textContent = `Thời gian còn lại: ${minute.toString().padStart(2,'0')}:${second.toString().padStart(2, '0')}`;
+        timeDo.textContent = `Thời gian còn lại: ${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`;
 
-        timeLeft--;
-        if (timeLeft < 0) {
-            clearInterval(timer);
-            alert("Thời gian đã hết, bài kiểm tra sẽ tự động kết thúc.");
-            if(!testEnded){
+        if (!testEnded) {
+            timeLeft--;
+
+            if (testEnded) {
+                clearInterval(timer);
+                return;
+            }
+
+            if (timeLeft < 0) {
+                clearInterval(timer);
+                alert("Thời gian đã hết, bài kiểm tra sẽ tự động kết thúc.");
+
                 // Gửi câu trả lời đến server
                 const submit = {
                     answers: {},
@@ -273,7 +279,7 @@ function rendertime(totalTime) {
 
                 const form = document.getElementById("quiz-form");
                 const formData = new FormData(form);
-                for(const [key, value] of formData.entries()) {
+                for (const [key, value] of formData.entries()) {
                     submit.answers[key] = value;
                 }
 
@@ -284,7 +290,7 @@ function rendertime(totalTime) {
                     },
                     body: JSON.stringify(submit),
                 }).then(response => {
-                    if(response.ok) {
+                    if (response.ok) {
                         console.log("Đã gửi câu trả lời thành công.");
                         return response.json();
 
@@ -306,8 +312,8 @@ function rendertime(totalTime) {
                 testEnded = true;
                 disableForm();
             }
-        }
 
+        }
     }, 1000);
 
 }
@@ -413,5 +419,37 @@ function renderQuestionNavButtons(numQuestions) {
         li.appendChild(btn);
         questionNav.appendChild(li);
     }
+}
+
+
+
+function activateExamMode() {
+    // Ngăn thoát hoặc reload trang
+    window.addEventListener("beforeunload", function (e){
+        if(!testEnded){
+            // Hiển thị hộp thoại xác nhận
+            const message = "Bạn có chắc chắn muốn thoát bài kiểm tra? Tất cả câu trả lời sẽ không được lưu.";
+            e.preventDefault();
+            e.returnValue = message;
+            return message;
+        }
+    });
+
+    if(!testEnded){
+        history.pushState(null, null, location.href);
+        window.addEventListener("popstate", function (){
+           history.pushState(null, null, location.href);
+           alert("Bạn không thể quay lại trang trước đó trong bài kiểm tra.");
+        });
+    }
+
+    // Ngăn không cho nhấn phím F5
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "F5" || e.ctrlKey && e.key.toLowerCase() === "r"){
+            e.preventDefault();
+            alert("Bạn không thể tải lại trang trong khi làm bài kiểm tra!");
+        }
+
+    })
 }
 
