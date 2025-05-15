@@ -32,4 +32,10 @@ public interface UserService {
     List<String> findSuggestions(String query);
 
     Page<User> findPaginatedUsers(String search, int pageNo, int pageSize);
+
+    void updateToken(String email, String token);
+
+    User getUserByResetPasswordToken(String token);
+
+    void changePassword(User user, String token);
 }

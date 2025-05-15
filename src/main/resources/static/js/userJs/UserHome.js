@@ -19,7 +19,6 @@ async function loadData(pageNo, pageSize) {
         });
         if(response.ok) {
             const data = await response.json();
-            console.log(data);
             renderTableHistory(data, pageSize);
             renderPaginational(data.currentPage,data.totalPages, pageSize);
         } else {
@@ -33,7 +32,7 @@ async function loadData(pageNo, pageSize) {
         showNotification("Lỗi", "Lỗi ở ngoài Catch", "error");
     }
 
-}'/'
+}
 
 
 
@@ -195,3 +194,4 @@ document.addEventListener("error", (event) => {
     console.error("Error loading data:", event);
     showNotification("Lỗi", "Lỗi ở ngoài Catch", "error");
 })
+

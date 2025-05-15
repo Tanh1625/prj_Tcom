@@ -218,7 +218,7 @@ async function loadData() {
             throw new Error("Network response was not ok");
         }
         const data = await response.json();
-        console.log("Dữ liệu câu hỏi: ", data);
+        // console.log("Dữ liệu câu hỏi: ", data);
 
         const title = document.getElementById("titleExam");
         const title2 = document.getElementById("quiz-title");

@@ -151,6 +151,7 @@ function setupEventListeners() {
                             break;
                         }
                     }
+
                 })
 
 
@@ -263,6 +264,7 @@ function updateTable(users, currentPage, pageSize) {
 
     users.forEach((user, index) => {
         const row = document.createElement('tr');
+        row.setAttribute("data-id", user.userID);
 
         // STT column
         const sttCell = document.createElement('td');
@@ -481,15 +483,15 @@ document.getElementById("editUserForm").addEventListener("submit", function (eve
             if (!response.ok) {
                 throw new Error('Server trả về lỗi: ' + response.status);
             }
-            console.log("console 1");
             return response.json();
         })
         .then(data => {
-            console.log("console 2");
             if (data.success) {
                 // Cập nhật thành công
                 showNotification('Cập nhật thành công', data.message, 'success');
                 updateUserRow(userId, userName, userEmail, userRole, userStatus);
+                console.log("Cập nhật thành công");
+                closeEditModal();
             } else {
                 showNotification('Cập nhật thất bại', data.message, 'error');
             }
@@ -539,7 +541,7 @@ function showNotification(title, message, type) {
     setTimeout(() => {
         notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
         setTimeout(() => notification.remove(), 500);
-    }, 5000);
+    },5000);
 }
 
 
@@ -564,6 +566,7 @@ function updateUserRow(userID, userName, userEmail, userRole, userStatus) {
 
             // Cập nhật trạng thái
             const statusSpan = row.querySelector('td:nth-child(6) span');
+            console.log("statusSpan: " + userStatus);
             if (userStatus === 'ACTIVE') {
                 statusSpan.textContent = 'Active';
                 statusSpan.className = 'bg-green-100 text-green-800 px-2 py-1 rounded-full';
@@ -610,6 +613,8 @@ document.getElementById("changePassForm").addEventListener("submit", function (e
                 console.log("console 2");
                 closeChangeModal();
                 showNotification('Đổi mật khẩu thành công', 'Mật khẩu đã được đổi thành công.', 'success');
+            }else{
+                showNotification('Đổi mật khẩu thất bại', data.message, 'error');
             }
         // Reset các input fields
             document.getElementById("currentPassword").value = '';

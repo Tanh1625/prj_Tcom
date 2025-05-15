@@ -32,7 +32,6 @@ public class AccountController {
     public ResponseEntity<User> updateAccount(HttpServletRequest request,
                                  Model model,
                                  @RequestParam String userId) {
-
         User user = userService.getUser(userId);
         if (user == null) {
             return ResponseEntity.notFound().build();
@@ -125,31 +124,36 @@ public class AccountController {
         if (userId == null || userId.isEmpty()) {
             response.put("success", false);
             response.put("message", "Thiếu userId");
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.ok(response);
         }
 
         if (currentPassword == null || currentPassword.isEmpty()) {
             response.put("success", false);
             response.put("message", "Vui lòng nhập mật khẩu hiện tại");
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.ok(response);
         }
 
         if (!userService.checkCurrentPassword(userId, currentPassword)) {
             response.put("success", false);
             response.put("message", "Mật khẩu hiện tại không đúng");
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.ok(response);
         }
 
         if (newPassword == null || newPassword.isEmpty() || confirmPassword == null || confirmPassword.isEmpty()) {
             response.put("success", false);
             response.put("message", "Vui lòng nhập mật khẩu mới và xác nhận mật khẩu");
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.ok(response);
         }
 
         if (!newPassword.equals(confirmPassword)) {
             response.put("success", false);
             response.put("message", "Mật khẩu mới và mật khẩu xác nhận không khớp");
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.ok(response);
+        }
+        if (!isStrongPassword(newPassword)) {
+            response.put("success", false);
+            response.put("message", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt");
+            return ResponseEntity.ok(response);
         }
 
         // Cập nhật mật khẩu
@@ -249,6 +253,13 @@ public class AccountController {
 
         return "redirect:/admin/home";
     }
+    // Thêm vào AccountController.java
+    private boolean isStrongPassword(String password) {
+        // Ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt
+        String regex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$";
+        return password.matches(regex);
+    }
+
 
 
 }

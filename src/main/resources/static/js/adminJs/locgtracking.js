@@ -19,7 +19,6 @@ async function loadData(pageNo, pageSize) {
         });
         if(response.ok) {
             const data = await response.json();
-            console.log(data);
             renderTableHistory(data, pageSize);
             renderPaginational(data.currentPage,data.totalPage, pageSize);
             console.log("oke rồi");
