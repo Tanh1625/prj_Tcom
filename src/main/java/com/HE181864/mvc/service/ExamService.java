@@ -6,4 +6,7 @@ import java.util.List;
 
 public interface ExamService {
     List<Exam> getAllExam();
+    Exam getExamById(int examID);
+
+    void addExam(int type);
 }

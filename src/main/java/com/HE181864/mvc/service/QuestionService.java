@@ -23,4 +23,6 @@ public interface QuestionService {
 
 
     boolean isExitQuestion(String quesContent, int quesType);
+
+    void saveQuestion(Question question);
 }

@@ -224,9 +224,9 @@ public class AccountController {
         }
 
         // Kiểm tra độ dài mật khẩu
-        if (password.length() <= 0 || password.length() > 20) {
-            redirectAttributes.addFlashAttribute("errorAdd", "Mật khẩu phải từ 1-20 ký tự");
-            model.addAttribute("errorAdd", "Mật khẩu phải từ 1-20 ký tự");
+        if (password.length() <= 0 || password.length() > 20 || !isStrongPassword(password)) {
+            redirectAttributes.addFlashAttribute("errorAdd", "Mật khẩu phải từ 1-20 ký tự, chứa chữ hoa, chữ thường, số và ký tự đặc biệt");
+            model.addAttribute("errorAdd", "Mật khẩu phải từ 1-20 ký tự, chứa chữ hoa, chữ thường, số và ký tự đặc biệt");
             return "admin/AddNew";
         }
 

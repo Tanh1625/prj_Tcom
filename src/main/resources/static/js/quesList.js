@@ -22,7 +22,6 @@ document.getElementById("deleteUserForm").addEventListener("submit", function (e
         .then(data => {
             closeDeleteModal();
 
-
             // xóa dòng khỏi bảng để ko phải ấn reload (thực tế database
             // đã xóa r nhưng trang ch reload lên không thay đổi)
             const deleteRow = document.querySelector(`tr[data-id="${quesId}"]`);
@@ -169,11 +168,20 @@ function updateAddAnswerCounter(count) {
     }
 }
 
+const questionDetail = {};
+
 // Function to fetch answers for editing
 function fetchAnswersForEdit(questionId) {
     const answersList = document.getElementById('answers-list');
     answersList.innerHTML = '<div class="text-center py-2"><i class="fas fa-spinner fa-spin text-blue-600"></i> Đang tải đáp án...</div>';
 
+    // Nếu đã có cache, dùng lại
+    if (questionDetail[questionId]) {
+        renderAnswerInputs(questionDetail[questionId], answersList);
+        return;
+    }
+
+    // Nếu chưa có, fetch từ server
     fetch(`/api/questions/${questionId}`)
         .then(response => {
             if (!response.ok) {
@@ -182,6 +190,7 @@ function fetchAnswersForEdit(questionId) {
             return response.json();
         })
         .then(answers => {
+            console.log("Fetched answers:", answers);
             answersList.innerHTML = ''; // Xóa loading
 
             if (!answers || answers.length === 0) {
@@ -189,16 +198,32 @@ function fetchAnswersForEdit(questionId) {
                 return;
             }
 
-            // Thêm các đáp án hiện có vào form để chỉnh sửa
-            answers.forEach((answer, index) => {
-                addEditOnlyAnswerInput(answersList, answer.answerContent, answer.correct, index, answer.answerId);
-            });
+            // Lưu cache
+            questionDetail[questionId] = answers;
+
+            // Render ra input
+            renderAnswerInputs(answers, answersList);
         })
         .catch(error => {
             console.error('Error fetching answers for edit:', error);
             answersList.innerHTML = '<p class="text-red-500">Không thể tải đáp án. Vui lòng thử lại sau.</p>';
         });
 }
+
+// Hàm render input đáp án
+function renderAnswerInputs(answers, container) {
+    container.innerHTML = ''; // Xóa nội dung cũ nếu có
+    answers.forEach((answer, index) => {
+        addEditOnlyAnswerInput(
+            container,
+            answer.answerContent,
+            answer.correct,
+            index,
+            answer.answerId
+        );
+    });
+}
+
 
 // Function to add editable answer inputs to the edit form
 function addEditOnlyAnswerInput(container, content = '', isCorrect = false, index, answerId) {
@@ -367,94 +392,61 @@ function fetchQuestionDetails(questionId) {
         });
 }
 
+const allQuestionsMap = {};
 
-// Submit form edit question
-document.getElementById('editQuestionForm').addEventListener('submit', function (event) {
-    event.preventDefault(); // Prevent default form submission
+function handleEditQuestion(event){
+        event.preventDefault();
 
-    const answersList = document.getElementById('answers-list');
+        const answersList = document.getElementById('answers-list');
+        const correctAnswer = answersList.querySelector('input[name="correctAnswerIndex"]:checked');
+        if (!correctAnswer) {
+            alert('Vui lòng chọn một đáp án đúng.');
+            return;
+        }
 
-    // Ensure at least one answer is marked as correct
-    const correctAnswer = answersList.querySelector('input[name="correctAnswerIndex"]:checked');
-    if (!correctAnswer) {
-        alert('Vui lòng chọn một đáp án đúng.');
-        return false;
-    }
+        const questionId = document.getElementById('edit-question-id').value;
+        const questionContent = document.getElementById('edit-question-content').value;
 
-    // Get form data
-    const questionId = document.getElementById('edit-question-id').value;
-    const questionContent = document.getElementById('edit-question-content').value;
+        const questionData = {
+            questionId: questionId,
+            questionContent: questionContent,
+            correctAnswerIndex: correctAnswer.value,
+            answers: []
+        };
 
-    // tạo một formdata để gửi sang controller
-    const formData = new FormData();
-    formData.append('questionId', questionId);
-    formData.append('questionContent', questionContent);
-    formData.append('correctAnswerIndex', correctAnswer.value);
+        const answerElements = answersList.querySelectorAll('div.flex.items-start');
+        answerElements.forEach((element) => {
+            const answerId = element.querySelector('input[name^="answers"][name$="answerId"]').value;
+            const content = element.querySelector('input[name^="answers"][name$="answerContent"]').value;
+            questionData.answers.push({
+                answerId: answerId,
+                answerContent: content
+            });
 
-    // Add answer data
-    const answerElements = answersList.querySelectorAll('div.flex.items-start');
-    answerElements.forEach((element, index) => {
-        const answerId = element.querySelector('input[name^="answers"][name$="answerId"]').value;
-        const content = element.querySelector('input[name^="answers"][name$="answerContent"]').value;
 
-        formData.append(`answers[${index}].answerId`, answerId);
-        formData.append(`answers[${index}].answerContent`, content);
-    });
+        });
+        const formeditQues = document.getElementById('editQuestionModal');
 
-    // Show loading indicator
-    const submitButton = this.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton.innerHTML;
-    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-    submitButton.disabled = true;
 
-    // Submit using fetch
-    fetch('/admin/updateQues', {
+        allQuestionsMap[questionId] = questionData;
+        console.log(allQuestionsMap[questionId]);
+        closeEditQuestionModal();
+}
+
+function onSubmitEditQues() {
+    fetch('/admin/update-question', {
         method: 'POST',
-        body: formData
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Server returned status: ' + response.status);
-            }
-            return response;
-        })
-        .then(response => {
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(allQuestionsMap)
+    }).then(response => {
             if (!response.ok) {
                 throw new Error('Server returned status: ' + response.status);
             }
             return response.json(); // Parse JSON response
-        })
-        .then(data => {
+    }).then(data => {
             if (data.success) {
-                // Handle success
-                closeEditQuestionModal();
-
-                // Update the UI to reflect the changes without page reload
-                const questionRows = document.querySelectorAll('tbody tr');
-                for (const row of questionRows) {
-                    const actionCell = row.querySelector('td:last-child');
-                    if (actionCell) {
-                        const editBtn = actionCell.querySelector('.edit-btn');
-                        if (editBtn && editBtn.dataset.id === questionId) {
-                            // Update the question content in the table
-                            const contentCell = row.querySelector('td:nth-child(2)');
-                            if (contentCell) {
-                                contentCell.textContent = questionContent;
-                            }
-
-                            // Update the data attributes for view and edit buttons
-                            const viewBtn = actionCell.querySelector('.view-details-btn');
-                            if (viewBtn) {
-                                viewBtn.dataset.content = questionContent;
-                            }
-                            editBtn.dataset.content = questionContent;
-
-                            // Show success message
-                            showNotification('Cập nhật thành công', data.message, 'success');
-                            break;
-                        }
-                    }
-                }
             } else {
                 showNotification('Cập nhật thất bại', data.message, 'error');
             }
@@ -465,10 +457,17 @@ document.getElementById('editQuestionForm').addEventListener('submit', function 
         })
         .finally(() => {
             // Restore button state
-            submitButton.innerHTML = originalButtonText;
+            submitButton.innerHTML = "Cập nhật";
             submitButton.disabled = false;
         });
+}
+
+// Add event listeners for edit question form submission
+document.getElementById('editQuestionForm').addEventListener('submit',handleEditQuestion );
+document.getElementById("update-question").addEventListener("click", ()=>{
+
 });
+
 
 // Hiển thị thông báo thành công hay thất bại
 function showNotification(title, message, type) {
@@ -663,3 +662,111 @@ document.getElementById('addQuestionForm').addEventListener('submit', function (
             submitButton.disabled = false;
         });
 });
+
+// upload Pdf
+function uploadPdf(){
+    const fileInput = document.getElementById('pdfFile');
+    const file = fileInput.files[0];
+    // if (!file) {
+    //     alert('Vui lòng chọn một tệp PDF để tải lên.');
+    //     return;
+    // }
+    if(Object.keys(allQuestionsMap).length !== 0){
+        onSubmitEditQues();
+    }
+
+
+    if ((file.type !== 'application/pdf') && !(!file)) {
+        alert('Vui lòng chọn tệp PDF hợp lệ.');
+        return;
+    }
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert('Tệp PDF quá lớn. Vui lòng chọn tệp nhỏ hơn 10MB.');
+        return;
+    }
+    const url = window.location.pathname.split('/');
+    const id = url[url.length - 1]; // Lấy phần cuối của URL để xác định ID câu hỏi
+
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('examId', id);
+
+    fetch(`/admin/pdf/upload`, {
+       method: 'POST',
+         body: formData
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('Có vấn đề khi tải lên tệp PDF: ' + response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('Tải lên PDF thành công!');
+            // Cập nhật giao diện hoặc làm gì đó sau khi tải lên thành công
+            loadPdf();
+        } else {
+            alert('Tải lên PDF thất bại: ' + data.message);
+        }
+    })
+        .catch(error => {
+            console.error('Có lỗi xảy ra:', error);
+            alert('Có lỗi khi tải lên PDF. Vui lòng thử lại sau.');
+        })
+
+}
+
+
+function loadPdf(){
+    const url = window.location.pathname.split('/');
+    const id = url[url.length - 1];
+    // Fetch the exam details to check if a PDF is already uploaded
+    fetch(`/admin/pdf/${id}`, {
+        method: 'GET',
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Không thể tải thông tin PDF: ' + response.statusText);
+            }
+            console.log("Đã tải thông tin PDF thành công");
+            return response.json();
+        })
+        .then(data => {
+            console.log(data);
+            const pdfContainer = document.getElementById('pdfContainer');
+            if (data.pdfFiles) {
+                pdfContainer.innerHTML = '';
+                // Hiển thị PDF
+                for (const pdfFile of data.pdfFiles) {
+                    const pdf = pdfFile;
+                    const byteCharacters = atob(pdf.fileData);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: pdf.fileType });
+                    const blobUrl = URL.createObjectURL(blob);
+                    // Gắn link nếu bạn muốn người dùng click:
+                    pdfContainer.innerHTML += `
+                    <a href="${blobUrl}" target="_blank" class="text-blue-600 hover:underline">
+                     Mở PDF: ${pdf.fileName}
+                     </a>
+                     <br>
+                  `;
+                }
+
+            } else {
+                pdfContainer.innerHTML = '<p class="text-gray-500">Chưa có PDF nào được tải lên.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Có lỗi xảy ra khi tải thông tin PDF:', error);
+            document.getElementById('pdfContainer').innerHTML = '<p class="text-red-500">Không thể tải thông tin PDF. Vui lòng thử lại sau.</p>';
+        });
+}
+
+document.addEventListener('DOMContentLoaded', loadPdf);
+
+

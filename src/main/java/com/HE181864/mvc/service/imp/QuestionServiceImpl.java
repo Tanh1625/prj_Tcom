@@ -89,4 +89,20 @@ public class QuestionServiceImpl implements QuestionService {
     public boolean isExitQuestion(String quesContent, int quesType) {
         return questionReporsitory.existsByQuestionContentAndQuestionType(quesContent, quesType);
     }
+
+    @Override
+    public void saveQuestion(Question question) {
+        int quesType = question.getQuestionType();
+        Exam exam = examRepository.findExamByExamId(quesType);
+        if(exam == null) {
+            System.out.println("Exam not found");
+            Exam exam1 = new Exam();
+            exam1.setExamId(quesType);
+            exam1.setExamName("Bộ câu hỏi số " + quesType);
+            examRepository.save(exam1);
+            exam = exam1;
+        }
+        question.setExam(exam);
+        questionReporsitory.save(question);
+    }
 }
