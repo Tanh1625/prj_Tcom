@@ -19,4 +19,17 @@ public class ExamServiceImpl implements ExamService {
     public List<Exam> getAllExam() {
         return examRepository.findAll();
     }
+
+    @Override
+    public Exam getExamById(int examID) {
+        return examRepository.findExamByExamId(examID);
+    }
+
+    @Override
+    public void addExam(int type) {
+        Exam exam1 = new Exam();
+        exam1.setExamId(type);
+        exam1.setExamName("Bộ câu hỏi số " + type);
+        examRepository.save(exam1);
+    }
 }

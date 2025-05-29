@@ -61,9 +61,13 @@ public class HomeController {
     @GetMapping("/api/users")
     public ResponseEntity<Map<String, Object>> getUsers(
             @RequestParam(defaultValue = "1") int pageNo,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        System.out.println("Page number: " + pageNo);
+        System.out.println("Search query: " + search);
+        System.out.println("Page size: " + pageSize);
 
-        int pageSize = 10; // Số lượng items trên mỗi trang
+        // Số lượng items trên mỗi trang
 
         // Gọi service để lấy dữ liệu người dùng theo tìm kiếm và phân trang
         Page<User> userPage = userService.findPaginatedUsers(search, pageNo, pageSize);

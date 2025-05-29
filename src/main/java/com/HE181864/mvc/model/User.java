@@ -38,6 +38,9 @@ public class User {
     @Column(name = "status", nullable = false)
     private Status status;
 
+    @Column(name = "token", length = 255)
+    private String token;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonBackReference
     private List<Logtracking> logtrackings;
@@ -48,18 +51,6 @@ public class User {
 
 
     public User() {
-    }
-
-    public User(String userID, String username, String password, String fullName, String email, Role role, Status status, List<Logtracking> logtrackings, List<Question> questions) {
-        this.userID = userID;
-        this.username = username;
-        this.password = password;
-        this.fullName = fullName;
-        this.email = email;
-        this.role = role;
-        this.status = status;
-        this.logtrackings = logtrackings;
-        this.questions = questions;
     }
 
     public String getUserID() {
@@ -118,6 +109,14 @@ public class User {
         this.status = status;
     }
 
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
     public List<Logtracking> getLogtrackings() {
         return logtrackings;
     }
@@ -131,6 +130,19 @@ public class User {
     }
 
     public void setQuestions(List<Question> questions) {
+        this.questions = questions;
+    }
+
+    public User(String userID, String username, String password, String fullName, String email, Role role, Status status, String token, List<Logtracking> logtrackings, List<Question> questions) {
+        this.userID = userID;
+        this.username = username;
+        this.password = password;
+        this.fullName = fullName;
+        this.email = email;
+        this.role = role;
+        this.status = status;
+        this.token = token;
+        this.logtrackings = logtrackings;
         this.questions = questions;
     }
 }

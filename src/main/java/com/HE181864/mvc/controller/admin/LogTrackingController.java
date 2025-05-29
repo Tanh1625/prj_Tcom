@@ -29,14 +29,14 @@ public class LogTrackingController {
     public String logTracking(HttpServletRequest request,
                               Model model,
                               @RequestParam(name = "page", defaultValue = "1") int page) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
-        User userCur = userService.getUserByEmail(email);
-        Page<Logtracking> logTrackingList = logTrackingService.getLogTrackingByUser(userCur, page);
-
-        model.addAttribute("logTrackingList", logTrackingList);
-        model.addAttribute("totalPage", logTrackingList.getTotalPages());
-        model.addAttribute("currentPage", page);
+//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//        String email = auth.getName();
+//        User userCur = userService.getUserByEmail(email);
+//        Page<Logtracking> logTrackingList = logTrackingService.getLogTrackingByUser(userCur, page);
+//
+//        model.addAttribute("logTrackingList", logTrackingList);
+//        model.addAttribute("totalPage", logTrackingList.getTotalPages());
+//        model.addAttribute("currentPage", page);
         return "admin/Logtracking";
     }
 
@@ -44,12 +44,13 @@ public class LogTrackingController {
     @GetMapping("/admin/logtracking1")
     public ResponseEntity<Map<String, Object>> logTracking1(HttpServletRequest request,
                                             Model model,
-                                            @RequestParam(name = "pageNo", defaultValue = "1") int page) {
+                                            @RequestParam(name = "pageNo", defaultValue = "1") int page,
+                                            @RequestParam(name = "pageSize", defaultValue = "25") int pageSize) {
         Map<String, Object> response = new HashMap<>();
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
         User userCur = userService.getUserByEmail(email);
-        Page<Logtracking> logTrackingList = logTrackingService.getLogTrackingByUser(userCur, page);
+        Page<Logtracking> logTrackingList = logTrackingService.getLogTrackingByUser(userCur, page, pageSize);
 
         if(logTrackingList.isEmpty()) {
             response.put("messageErr", "Không tìm thấy lịch sử cá nhân");

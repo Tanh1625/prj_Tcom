@@ -53,4 +53,6 @@ public interface UserRepository extends JpaRepository<User, String> {
                                  Pageable pageable);
 
     List<User> findByFullNameContainingIgnoreCaseAndStatusNot(String fullName, Status status);
+
+    User findByToken(String token);
 }

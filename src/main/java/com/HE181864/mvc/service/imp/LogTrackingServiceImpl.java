@@ -21,7 +21,7 @@ public class LogTrackingServiceImpl implements LogTrackingService {
     }
 
     @Override
-    public Page<Logtracking> getLogTrackingByUser(User userCur, int pageNo) {
-        return logTrackingRepository.findByUser(userCur, PageRequest.of(pageNo - 1, 10));
+    public Page<Logtracking> getLogTrackingByUser(User userCur, int pageNo, int pageSize) {
+        return logTrackingRepository.findByUser(userCur, PageRequest.of(pageNo - 1, pageSize));
     }
 }

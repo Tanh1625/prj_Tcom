@@ -48,6 +48,23 @@ public class Questioncontroller {
         return "admin/ManageQues";
     }
 
+    @GetMapping("/admin/questionList")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getList(){
+        Map<String, Object> response = new HashMap<>();
+        List<Exam> examList = examService.getAllExam();
+
+        if(examList.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Không có bài thi nào trong hệ thống");
+            return ResponseEntity.ok(response);
+        }
+        response.put("examList", examList);
+        response.put("success", true);
+        response.put("message", "Lấy danh sách bài thi thành công");
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/admin/questionList/{key}")
     public String questionList(HttpServletRequest request,
                                 Model model,
@@ -202,93 +219,74 @@ public class Questioncontroller {
         return ResponseEntity.ok(answers);
     }
 
-
-
-    @PostMapping("/admin/updateQues")
+    @PostMapping("/admin/update-question")
     @ResponseBody
-    public Map<String, Object> updateQuestion(@RequestParam("questionId") int questionId,
-                                              @RequestParam("questionContent") String questionContent,
-                                              @RequestParam Map<String, String> formData) {
-
+    public Map<String, Object> updateQuestions(@RequestBody Map<String, Object> allQuestionsMap) {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            Question question = questionService.getQuesById(questionId);
-            if (question == null) {
-                response.put("success", false);
-                response.put("message", "Không tìm thấy câu hỏi");
-                return response;
-            }
+            Map<String, Object> questionData = null;
+            for (Map.Entry<String, Object> entry : allQuestionsMap.entrySet()) {
+                int questionId = (int) Integer.parseInt(entry.getKey());
 
-            if(questionService.isExitQuestion(questionContent, question.getQuestionType())
-                    && !question.getQuestionContent().equals(questionContent)) {
-                response.put("success", false);
-                response.put("message", "Chỉnh sửa thất bại do câu hỏi đã tồn tại");
-                return response;
-            }
+                questionData = (Map<String, Object>) entry.getValue();
 
-            questionService.updateQuestion(questionContent, questionId);
+                String questionContent = (String) questionData.get("questionContent");
+                int correctAnswerIndex = Integer.parseInt(questionData.get("correctAnswerIndex").toString());
 
-            //Add answer
-            List<Answer> answers = new ArrayList<>();
-            int answerCount = 0;
 
-            // Find the highest index of answers in the form data
-            for (String key : formData.keySet()) {
-                if (key.matches("answers\\[\\d+\\]\\.answerContent")) {
-                    int index = Integer.parseInt(key.replaceAll("\\D+", ""));
-                    answerCount = Math.max(answerCount, index + 1);
+                List<Map<String, Object>> answers = (List<Map<String, Object>>) questionData.get("answers");
+
+                Question question = questionService.getQuesById(questionId);
+
+                if (question == null) {
+                    response.put("success", false);
+                    response.put("message", "Không tìm thấy câu hỏi ID: " + questionId);
+                    return response;
                 }
-            }
 
-            // Get the correct answer index
-            int correctAnswerIndex = -1;
-            if (formData.containsKey("correctAnswerIndex")) {
-                correctAnswerIndex = Integer.parseInt(formData.get("correctAnswerIndex"));
-            }
+                if (questionService.isExitQuestion(questionContent, question.getQuestionType())
+                        && !question.getQuestionContent().equals(questionContent)) {
+                    response.put("success", false);
+                    response.put("message", "Câu hỏi đã tồn tại: " + questionContent);
+                    return response;
+                }
 
-            // Update answer objects
-            for (int i = 0; i < answerCount; i++) {
-                String answerContent = formData.get("answers[" + i + "].answerContent");
-                String answerIdStr = formData.get("answers[" + i + "].answerId");
+                questionService.updateQuestion(questionContent, questionId);
 
-                if (answerContent != null && !answerContent.trim().isEmpty() && answerIdStr != null) {
-                    int answerId = Integer.parseInt(answerIdStr);
+                // Cập nhật các đáp án
+                for (int i = 0; i < answers.size(); i++) {
+                    Map<String, Object> answerMap = answers.get(i);
+                    int answerId = Integer.parseInt(answerMap.get("answerId").toString());
+                    String answerContent = answerMap.get("answerContent").toString();
+
                     Answer answer = answerService.getAnswerbyId(answerId);
-
                     if (answer != null) {
                         answer.setAnswerContent(answerContent);
                         answer.setCorrect(i == correctAnswerIndex);
-                        answers.add(answer);
+                        answerService.updateAnswer(answer);
                     }
                 }
+
+                // Log tracking
+                Authentication authen = SecurityContextHolder.getContext().getAuthentication();
+                String emailCur = authen.getName();
+                User userCur = userService.getUserByEmail(emailCur);
+
+                Logtracking log = new Logtracking();
+                log.setUser(userCur);
+                log.setContent("Chỉnh sửa câu hỏi: " + questionContent);
+                log.setTime(LocalDateTime.now());
+                logTrackingService.saveLog(log);
             }
-
-            // Save answers to the database
-            for (Answer answer : answers) {
-                answerService.updateAnswer(answer);
-            }
-
-            // logTracking
-            Authentication authen = SecurityContextHolder.getContext().getAuthentication();
-            String emailCur = authen.getName();
-            User userCur = userService.getUserByEmail(emailCur);
-            Logtracking logTracking = new Logtracking();
-            logTracking.setUser(userCur);
-            logTracking.setContent("Chỉnh sửa câu hỏi: " + questionContent);
-            logTracking.setTime(LocalDateTime.now());
-            logTrackingService.saveLog(logTracking);
-
             response.put("success", true);
-            response.put("message", "Chỉnh sửa câu hỏi thành công");
-            response.put("questionType", question.getQuestionType());
+            response.put("message", "Cập nhật nhiều câu hỏi thành công");
+            response.put("data", questionData);
 
-        } catch (Exception e) {
+        }catch (Exception e) {
             response.put("success", false);
-            response.put("message", "Lỗi: " + e.getMessage());
+            response.put("message", "Lỗi xử lý: " + e.getMessage());
         }
-
         return response;
     }
-
 }

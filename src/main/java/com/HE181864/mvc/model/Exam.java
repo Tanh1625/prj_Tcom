@@ -1,7 +1,6 @@
 package com.HE181864.mvc.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import javax.persistence.*;
 import java.util.List;
@@ -25,6 +24,10 @@ public class Exam {
     @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonBackReference
     private List<ExamHistory> examHistories;
+
+    @OneToMany(mappedBy = "exam", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference
+    private List<PdfFile> pdfFiles;
 
 
     public Exam() {

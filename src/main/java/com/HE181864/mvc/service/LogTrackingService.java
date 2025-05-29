@@ -7,5 +7,5 @@ import org.springframework.data.domain.Page;
 public interface LogTrackingService {
     void saveLog(Logtracking logTracking);
 
-    Page<Logtracking> getLogTrackingByUser(User userCur, int pageNo);
+    Page<Logtracking> getLogTrackingByUser(User userCur, int pageNo, int pageSize);
 }
