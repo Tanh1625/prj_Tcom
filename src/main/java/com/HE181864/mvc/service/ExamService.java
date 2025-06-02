@@ -9,4 +9,6 @@ public interface ExamService {
     Exam getExamById(int examID);
 
     void addExam(int type);
+
+    void saveExam(Exam exam);
 }

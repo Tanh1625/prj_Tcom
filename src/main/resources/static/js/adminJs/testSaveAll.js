@@ -1,852 +1,698 @@
-/**
- * Change Management System for Question Management
- * Adds the ability to stage changes before saving to database
- * Date: 2025-05-28
- */
+import * as common from '../Common.js';
+window.closeEditQuestionModal = closeEditQuestionModal;
+window.closeDetailsModal = closeDetailsModal;
+window.closeDeleteModal = closeDeleteModal;
+window.closeAddModal = closeAddModal;
 
-// Global state for tracking changes
-const changeManager = {
-    addedQuestions: [],
-    editedQuestions: {},
-    deletedQuestions: [],
-    uploadedPdfs: null,
-    hasChanges: function() {
-        return this.addedQuestions.length > 0 ||
-            Object.keys(this.editedQuestions).length > 0 ||
-            this.deletedQuestions.length > 0 ||
-            this.uploadedPdfs !== null;
-    },
-    reset: function() {
-        this.addedQuestions = [];
-        this.editedQuestions = {};
-        this.deletedQuestions = [];
-        this.uploadedPdfs = null;
-        updateChangeSummary();
+let originalData = [];
+let modifiedData = [];
+const MAX_ANSWERS = 4;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadData();
+    console.log("Modified Data:",modifiedData);
+    console.log("Original Data:", originalData);
+
+})
+
+async function loadData() {
+    try{
+        const path = window.location.pathname.split('/');
+        const id = path[path.length - 1];
+        const response = await fetch(`/admin/api/questionList/${id}`);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        originalData = await response.json();
+        modifiedData = JSON.parse(JSON.stringify(originalData)); // Deep copy
+
+        renderTable(originalData.data);
+    }catch(err){
+        console.error('Error loading data:', err);
     }
-};
+}
 
-// Set up the change manager when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Create the save changes UI
-    createSaveChangesUI();
+function renderTable(data) {
+    const tableBody = document.getElementById('tableBody');
+    tableBody.innerHTML = '';
 
-    // Override existing handlers
-    overrideExistingHandlers();
 
-    // Call existing functions if needed
-    if (typeof loadPdf === 'function') {
-        loadPdf();
+    data.filter((item) => item.statusChange !== 'deleted')
+        .forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="border border-gray-300 py-3 px-4">${index+1}</td>
+                <td class="border border-gray-300 py-3 px-4">
+                    ${item.questionContent}
+                </td>
+                <td class="border border-gray-300 py-3 px-4 space-x-2">
+                    <a href="#" class="text-blue-600 hover:underline text-sm view-details-btn"
+                       data-id="${item.questionId}" data-content="${item.questionContent}">Xem chi tiết</a>
+                    <a href="#" class="text-blue-600 hover:underline text-sm edit-btn"
+                       data-id="${item.questionId}">Chỉnh sửa</a>
+                    <a href="#" class="text-red-600 hover:underline text-sm delete-btn"
+                       data-id="${item.questionId}">Xóa</a>
+                </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+// ----------_______________Xem chi tiết_____________-------------
+
+document.getElementById('tableBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('.view-details-btn');
+    if (!btn) return;
+
+    e.preventDefault();
+    const questionId = btn.dataset.id;
+    let questionContent;
+    const found = modifiedData.data.find(item => item.questionId == questionId);
+    if (found) {
+        questionContent = found.questionContent;
+    }
+    document.getElementById('question-id').textContent = questionId;
+    document.getElementById('question-content').textContent = questionContent;
+
+    //show answer
+    const additionalDetails = document.getElementById('additional-details');
+    additionalDetails.innerHTML = '';
+    const answers = found.answers || [];
+    if( answers.length > 0) {
+        const answersContainer = document.createElement('div');
+        answersContainer.className = 'mb-4';
+
+        const answersTitle = document.createElement('h3');
+        answersTitle.className = 'text-sm font-medium text-gray-700 mb-2';
+        answersTitle.textContent = 'Các đáp án:';
+        answersContainer.appendChild(answersTitle);
+
+        const answersList = document.createElement('ul');
+        answersList.className = 'list-disc pl-5 space-y-1';
+
+        answers.forEach(answer => {
+            const answerItem = document.createElement('li');
+            answerItem.className = 'text-sm text-gray-600';
+            answerItem.innerHTML = `${answer.answerContent} ${answer.correct ? '<span class="text-green-600 font-medium">(Đáp án đúng)</span>' : ''}`;
+            answersList.appendChild(answerItem);
+        });
+
+        answersContainer.appendChild(answersList);
+        additionalDetails.appendChild(answersContainer);
+    }else{
+        additionalDetails.innerHTML = '<p class="text-gray-500">Không có đáp án cho câu hỏi này.</p>';
+        return;
     }
 
-    // Add PDF preview container
-    createPdfPreviewContainer();
+    document.getElementById('questionDetailsModal').classList.remove('hidden');
 });
 
-// Create PDF preview container
-function createPdfPreviewContainer() {
-    // Create a container for PDF preview that will appear when a file is selected
-    const pdfUploadSection = document.querySelector('.col-md-6');
-    if (pdfUploadSection) {
-        const previewContainer = document.createElement('div');
-        previewContainer.id = 'pdfPreviewContainer';
-        previewContainer.className = 'mt-3';
-
-        // Insert it before the pdfContainer
-        const pdfContainer = document.getElementById('pdfContainer');
-        pdfUploadSection.insertBefore(previewContainer, pdfContainer);
-    }
+function closeDetailsModal() {
+    document.getElementById('questionDetailsModal').classList.add('hidden');
 }
 
-// Create the UI for saving changes
-function createSaveChangesUI() {
-    // Create floating save changes panel
-    const savePanel = document.createElement('div');
-    savePanel.id = 'saveChangesPanel';
-    savePanel.className = 'fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-300 p-4 hidden z-50';
 
-    savePanel.innerHTML = `
-        <div class="container mx-auto flex items-center justify-between">
-            <div>
-                <h3 class="font-bold text-lg">Thay đổi chưa được lưu</h3>
-                <div id="changeSummary" class="text-sm text-gray-600 cursor-pointer"></div>
-            </div>
-            <div class="flex space-x-3">
-                <button id="cancelChangesBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                    Hủy thay đổi
-                </button>
-                <button id="saveAllChangesBtn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                    Lưu tất cả thay đổi
-                </button>
-            </div>
-        </div>
-    `;
+// ----------_______________Chỉnh sửa_____________-------------
+document.getElementById('tableBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('.edit-btn');
+    if (!btn) return;
 
-    document.body.appendChild(savePanel);
+    e.preventDefault();
+    const questionId = btn.dataset.id;
+    let questionContent;
+    const found = modifiedData.data.find(item => item.questionId == questionId);
+    if (found) {
+        questionContent = found.questionContent;
+    }
 
-    // Add event listeners for save/cancel buttons
-    document.getElementById('saveAllChangesBtn').addEventListener('click', saveAllChanges);
-    document.getElementById('cancelChangesBtn').addEventListener('click', cancelAllChanges);
+    // Show edit modal
+    document.getElementById('edit-question-id').value = questionId;
+    document.getElementById('edit-question-content').value = questionContent;
 
-    // Create details panel for changes
-    const detailPanel = document.createElement('div');
-    detailPanel.id = 'changeDetailsPanel';
-    detailPanel.className = 'fixed bottom-20 left-4 right-4 bg-white shadow-lg border border-gray-300 rounded-lg p-4 hidden max-h-96 overflow-y-auto z-50';
+    // show answer
+    const answersList = document.getElementById('answers-list');
+    answersList.innerHTML = '';
+    const answers = found.answers || [];
+    renderAnswerInputs(answers, answersList);
 
-    detailPanel.innerHTML = `
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-lg">Chi tiết thay đổi</h3>
-            <button id="closeDetailsBtn" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div id="changeDetailContent"></div>
-    `;
+    document.getElementById('editQuestionModal').classList.remove('hidden');
+});
 
-    document.body.appendChild(detailPanel);
+function closeEditQuestionModal() {
+    renderTable(modifiedData.data);
+    document.getElementById('editQuestionModal').classList.add('hidden');
+}
 
-    // Add event listener to close details panel
-    document.getElementById('closeDetailsBtn').addEventListener('click', function() {
-        document.getElementById('changeDetailsPanel').classList.add('hidden');
+// Hàm render input đáp án
+function renderAnswerInputs(answers, container) {
+    container.innerHTML = ''; // Xóa nội dung cũ nếu có
+    answers.forEach((answer, index) => {
+        addEditOnlyAnswerInput(
+            container,
+            answer.answerContent,
+            answer.correct,
+            index,
+            answer.answerId
+        );
     });
+}
 
-    // Add click handler to summary to show details
-    document.getElementById('changeSummary').addEventListener('click', function() {
-        if (changeManager.hasChanges()) {
-            showChangeDetails();
+function addEditOnlyAnswerInput(container, content = '', isCorrect = false, index, answerId) {
+    const answerDiv = document.createElement('div');
+    answerDiv.className = 'flex items-start space-x-2';
+
+    // Unique ID for each answer
+    const uniqueId = Date.now() + '-' + index;
+
+    // Hidden input for answer ID - luôn yêu cầu có answerId khi chỉnh sửa
+    const hiddenInput = `<input type="hidden" name="answers[${index}].answerId" value="${answerId}">`;
+
+    answerDiv.innerHTML = `
+                ${hiddenInput}
+                <div class="flex-grow">
+                    <input
+                        type="text"
+                        name="answers[${index}].answerContent"
+                        value="${content}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        placeholder="Nhập nội dung đáp án"
+                        required
+                    >
+                </div>
+                <div class="flex items-center space-x-2 pt-2">
+                    <input
+                        type="radio"
+                        name="correctAnswerIndex"
+                        id="correct-${uniqueId}"
+                        value="${index}"
+                        ${isCorrect ? 'checked' : ''}
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    >
+                    <label for="correct-${uniqueId}" class="text-xs text-gray-700 cursor-pointer">Đáp án đúng</label>
+                </div>
+            `;
+
+    container.appendChild(answerDiv);
+}
+
+document.getElementById('editQuestionForm').addEventListener('submit',handleEditQuestion );
+
+// lưu tạm thời
+function handleEditQuestion(event){
+    event.preventDefault();
+
+    const answersList = document.getElementById('answers-list');
+    const correctAnswer = answersList.querySelector('input[name="correctAnswerIndex"]:checked');
+    if (!correctAnswer) {
+        alert('Vui lòng chọn một đáp án đúng.');
+        return;
+    }
+
+    const questionId = document.getElementById('edit-question-id').value;
+    const questionContent = document.getElementById('edit-question-content').value;
+
+
+    const found = modifiedData.data.find(item => item.questionId == questionId);
+    if(!found){
+        alert('Câu hỏi không tồn tại.');
+        return;
+    }
+    found.questionContent = questionContent;
+
+
+    const answerElements = answersList.querySelectorAll('div.flex.items-start');
+    answerElements.forEach((element, index) => {
+        const answerId = element.querySelector('input[name^="answers"][name$="answerId"]').value;
+        const content = element.querySelector('input[name^="answers"][name$="answerContent"]').value;
+        const answer = found.answers.find(item => item.answerId == answerId);
+        if(answer){
+            answer.answerContent = content;
+            answer.correct = (index.toString() === correctAnswer.value);
         }
+
+
     });
+    console.log("found:",found);
+
+
+    closeEditQuestionModal();
 }
+// hàm kiểm tra và lấy những phần tử bị thay đổi
+function getChangedQuestions(original, modified) {
+    const changed = [];
 
-// Override existing event handlers to stage changes instead of saving immediately
-function overrideExistingHandlers() {
-    // Override delete form submission
-    const deleteForm = document.getElementById("deleteUserForm");
-    if (deleteForm) {
-        // Store original event listeners
-        const originalHandlers = deleteForm.onsubmit;
+    modified.data.forEach((modQ) => {
+        let questionChanged = false;
 
-        // Remove existing listeners
-        deleteForm.onsubmit = null;
+        const origQ = original.data.find(o => o.questionId === modQ.questionId);
 
-        // Add new handler
-        deleteForm.addEventListener("submit", function(event) {
-            event.preventDefault();
-
-            const quesId = document.getElementById("deleteUserId").value;
-
-            // Show loading on button
-            const deleteButton = document.getElementById("deleteUserButton");
-            const copyDeleteButton = deleteButton.innerHTML;
-            deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-            deleteButton.disabled = true;
-
-            // Add to pending deletes instead of immediately deleting
-            changeManager.deletedQuestions.push(quesId);
-
-            // Hide the row from UI
-            const deleteRow = document.querySelector(`tr[data-id="${quesId}"]`);
-            if (deleteRow) {
-                deleteRow.style.display = 'none';
+        if (!origQ) {
+            // Câu hỏi mới thêm
+            questionChanged = true;
+        } else {
+            // So sánh nội dung câu hỏi và trạng thái
+            if (origQ.questionContent !== modQ.questionContent) {
+                questionChanged = true;
+            }
+            if ((origQ.statusChange || '') !== (modQ.statusChange || '')) {
+                questionChanged = true;
             }
 
-            // Close delete modal
-            closeDeleteModal();
+            // So sánh đáp án
+            const modifiedAnswers = modQ.answers || [];
+            const originalAnswers = origQ.answers || [];
 
-            // Update change summary
-            updateChangeSummary();
+            // Kiểm tra đáp án mới hoặc thay đổi trong modifiedAnswers
+            for (let i = 0; i < modifiedAnswers.length; i++) {
+                const modA = modifiedAnswers[i];
+                const origA = originalAnswers.find(a => a.answerId === modA.answerId);
 
-            // Show notification
-            showNotification('Đã thêm vào thay đổi', 'Câu hỏi sẽ bị xóa khi bạn lưu thay đổi', 'info');
-
-            // Reset button
-            deleteButton.innerHTML = copyDeleteButton;
-            deleteButton.disabled = false;
-        });
-    }
-
-    // Override add question form submission
-    const addForm = document.getElementById('addQuestionForm');
-    if (addForm) {
-        // Store original handlers
-        const originalHandlers = addForm.onsubmit;
-
-        // Remove existing event listeners
-        addForm.onsubmit = null;
-
-        // Add new handler
-        addForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const answersList = document.getElementById('add-answers-list');
-            const answers = answersList.querySelectorAll('div.flex.items-start');
-
-            if (answers.length <= 1) {
-                alert('Vui lòng thêm ít nhất hai đáp án cho câu hỏi.');
-                return false;
-            }
-
-            // Ensure at least one answer is marked as correct
-            const correctAnswer = answersList.querySelector('input[name="newCorrectAnswerIndex"]:checked');
-            if (!correctAnswer) {
-                alert('Vui lòng chọn một đáp án đúng.');
-                return false;
-            }
-
-            // Get form data
-            const questionContent = document.getElementById('quesContent').value;
-            const questionType = document.getElementById('quesType').value;
-
-            // Show loading indicator
-            const submitButton = this.querySelector('button[type="submit"]');
-            const originalButtonText = submitButton.innerHTML;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-            submitButton.disabled = true;
-
-            // Create new question object
-            const newQuestion = {
-                questionContent: questionContent,
-                questionType: questionType,
-                correctAnswerIndex: correctAnswer.value,
-                answers: []
-            };
-
-            // Add answers
-            answers.forEach((element, index) => {
-                const content = element.querySelector('input[type="text"]').value;
-                newQuestion.answers.push({
-                    content: content,
-                    isCorrect: index.toString() === correctAnswer.value
-                });
-            });
-
-            // Add to the change manager
-            changeManager.addedQuestions.push(newQuestion);
-
-            // Update UI with temporary row
-            addTemporaryQuestionRow(newQuestion);
-
-            // Close the modal and reset form
-            closeEditModal();
-
-            // Reset form
-            event.target.reset();
-            answersList.innerHTML = '';
-            addNewAnswerInput(answersList, '', false, 0);
-            updateAddAnswerCounter(1);
-
-            // Update change summary
-            updateChangeSummary();
-
-            // Show notification
-            showNotification('Đã thêm vào thay đổi', 'Câu hỏi mới sẽ được thêm khi bạn lưu thay đổi', 'info');
-
-            // Restore button state
-            submitButton.innerHTML = originalButtonText;
-            submitButton.disabled = false;
-        });
-    }
-
-    // Override edit question form submission
-    const editForm = document.getElementById('editQuestionForm');
-    if (editForm) {
-        // Store original handlers
-        const originalHandlers = editForm.onsubmit;
-
-        // Remove existing handlers
-        editForm.onsubmit = null;
-
-        // Add new handler
-        editForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const answersList = document.getElementById('answers-list');
-
-            // Ensure at least one answer is marked as correct
-            const correctAnswer = answersList.querySelector('input[name="correctAnswerIndex"]:checked');
-            if (!correctAnswer) {
-                alert('Vui lòng chọn một đáp án đúng.');
-                return false;
-            }
-
-            // Get form data
-            const questionId = document.getElementById('edit-question-id').value;
-            const questionContent = document.getElementById('edit-question-content').value;
-
-            // Show loading indicator
-            const submitButton = this.querySelector('button[type="submit"]');
-            const originalButtonText = submitButton.innerHTML;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-            submitButton.disabled = true;
-
-            // Create edited question object
-            const editedQuestion = {
-                questionId: questionId,
-                questionContent: questionContent,
-                correctAnswerIndex: correctAnswer.value,
-                answers: []
-            };
-
-            // Add answer data
-            const answerElements = answersList.querySelectorAll('div.flex.items-start');
-            answerElements.forEach((element, index) => {
-                const answerId = element.querySelector('input[name^="answers"][name$="answerId"]').value;
-                const content = element.querySelector('input[name^="answers"][name$="answerContent"]').value;
-
-                editedQuestion.answers.push({
-                    answerId: answerId,
-                    content: content,
-                    isCorrect: index.toString() === correctAnswer.value
-                });
-            });
-
-            // Add to change manager
-            changeManager.editedQuestions[questionId] = editedQuestion;
-
-            // Update UI to show pending edit
-            updateRowAsPendingEdit(questionId, questionContent);
-
-            // Close the modal
-            closeEditQuestionModal();
-
-            // Update change summary
-            updateChangeSummary();
-
-            // Show notification
-            showNotification('Đã thêm vào thay đổi', 'Chỉnh sửa sẽ được áp dụng khi bạn lưu thay đổi', 'info');
-
-            // Restore button state
-            submitButton.innerHTML = originalButtonText;
-            submitButton.disabled = false;
-        });
-    }
-
-    // Override PDF upload function (handle the existing "Lưu chỉnh sửa" button)
-    const pdfUploadButton = document.querySelector('button.btn.btn-primary');
-    if (pdfUploadButton && pdfUploadButton.getAttribute('onclick') === 'uploadPdf()') {
-        // Remove existing onclick handler
-        pdfUploadButton.removeAttribute('onclick');
-
-        // Add new click handler
-        pdfUploadButton.addEventListener('click', function() {
-            const fileInput = document.getElementById('pdfFile');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert('Vui lòng chọn một tệp PDF để tải lên.');
-                return;
-            }
-
-            if (file.type !== 'application/pdf') {
-                alert('Vui lòng chọn tệp PDF hợp lệ.');
-                return;
-            }
-
-            if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                alert('Tệp PDF quá lớn. Vui lòng chọn tệp nhỏ hơn 10MB.');
-                return;
-            }
-
-            // Store the file in the change manager
-            changeManager.uploadedPdfs = file;
-
-            // Preview the file
-            const pdfPreviewContainer = document.getElementById('pdfPreviewContainer');
-            if (pdfPreviewContainer) {
-                const blobUrl = URL.createObjectURL(file);
-
-                pdfPreviewContainer.innerHTML = `
-                    <div class="alert alert-info">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div>
-                                <i class="fas fa-file-pdf text-danger me-2"></i>
-                                <span class="fw-medium">${file.name}</span>
-                                <span class="text-muted small ms-2">(${(file.size / 1024).toFixed(2)} KB)</span>
-                            </div>
-                            <button type="button" onclick="cancelPdfUpload()" class="btn-close"></button>
-                        </div>
-                        <div class="small text-muted fst-italic mb-2">* PDF sẽ được tải lên sau khi bạn nhấn "Lưu tất cả thay đổi"</div>
-                        <a href="${blobUrl}" target="_blank" class="text-primary small">
-                            <i class="fas fa-external-link-alt me-1"></i> Mở tệp PDF trong tab mới
-                        </a>
-                    </div>
-                `;
-            }
-
-            // Update change summary
-            updateChangeSummary();
-
-            // Show notification
-            showNotification('Đã thêm vào thay đổi', 'PDF sẽ được tải lên khi bạn lưu thay đổi', 'info');
-        });
-    }
-
-    // Add file input change handler to show file info
-    const fileInput = document.getElementById('pdfFile');
-    if (fileInput) {
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const pdfPreviewContainer = document.getElementById('pdfPreviewContainer');
-                if (pdfPreviewContainer) {
-                    const blobUrl = URL.createObjectURL(file);
-
-                    pdfPreviewContainer.innerHTML = `
-                        <div class="alert alert-info">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="fas fa-file-pdf text-danger me-2"></i>
-                                    <span class="fw-medium">${file.name}</span>
-                                    <span class="text-muted small ms-2">(${(file.size / 1024).toFixed(2)} KB)</span>
-                                </div>
-                                <button type="button" onclick="this.parentElement.parentElement.remove(); document.getElementById('pdfFile').value = '';" class="btn-close"></button>
-                            </div>
-                            <div class="small text-muted mt-2">Nhấn "Lưu chỉnh sửa" để thêm file vào danh sách thay đổi.</div>
-                        </div>
-                    `;
+                if (!origA || modA.answerContent !== origA.answerContent || modA.correct !== origA.correct) {
+                    questionChanged = true;
+                    break;
                 }
             }
-        });
-    }
 
-    // Add cancelPdfUpload function
-    window.cancelPdfUpload = function() {
-        changeManager.uploadedPdfs = null;
-
-        const fileInput = document.getElementById('pdfFile');
-        const pdfPreviewContainer = document.getElementById('pdfPreviewContainer');
-
-        if (fileInput) fileInput.value = '';
-        if (pdfPreviewContainer) pdfPreviewContainer.innerHTML = '';
-
-        updateChangeSummary();
-    };
-}
-
-// Update the change summary display
-function updateChangeSummary() {
-    const panel = document.getElementById('saveChangesPanel');
-    const summary = document.getElementById('changeSummary');
-
-    if (!panel || !summary) return;
-
-    if (changeManager.hasChanges()) {
-        // Build summary text
-        let summaryText = [];
-
-        if (changeManager.addedQuestions.length > 0) {
-            summaryText.push(`Thêm ${changeManager.addedQuestions.length} câu hỏi mới`);
-        }
-
-        if (Object.keys(changeManager.editedQuestions).length > 0) {
-            summaryText.push(`Chỉnh sửa ${Object.keys(changeManager.editedQuestions).length} câu hỏi`);
-        }
-
-        if (changeManager.deletedQuestions.length > 0) {
-            summaryText.push(`Xóa ${changeManager.deletedQuestions.length} câu hỏi`);
-        }
-
-        if (changeManager.uploadedPdfs !== null) {
-            summaryText.push(`Tải lên 1 tệp PDF`);
-        }
-
-        summary.innerHTML = `<span class="hover:text-blue-600">${summaryText.join(', ')} - <u>Xem chi tiết</u></span>`;
-        panel.classList.remove('hidden');
-    } else {
-        summary.textContent = 'Không có thay đổi';
-        panel.classList.add('hidden');
-    }
-}
-
-// Show detailed view of all pending changes
-function showChangeDetails() {
-    const detailPanel = document.getElementById('changeDetailsPanel');
-    const detailContent = document.getElementById('changeDetailContent');
-
-    if (!detailPanel || !detailContent) return;
-
-    detailContent.innerHTML = '';
-
-    // Add questions section
-    if (changeManager.addedQuestions.length > 0) {
-        const addedSection = document.createElement('div');
-        addedSection.className = 'mb-4';
-        addedSection.innerHTML = `
-            <h4 class="font-medium text-green-700 mb-2">Câu hỏi thêm mới (${changeManager.addedQuestions.length})</h4>
-            <ul class="list-disc pl-5 space-y-1">
-                ${changeManager.addedQuestions.map(q =>
-            `<li class="text-sm">${q.questionContent} <span class="text-xs text-gray-500">(${q.answers.length} đáp án)</span></li>`
-        ).join('')}
-            </ul>
-        `;
-        detailContent.appendChild(addedSection);
-    }
-
-    // Edited questions section
-    if (Object.keys(changeManager.editedQuestions).length > 0) {
-        const editedSection = document.createElement('div');
-        editedSection.className = 'mb-4';
-        editedSection.innerHTML = `
-            <h4 class="font-medium text-blue-700 mb-2">Câu hỏi đã chỉnh sửa (${Object.keys(changeManager.editedQuestions).length})</h4>
-            <ul class="list-disc pl-5 space-y-1">
-                ${Object.values(changeManager.editedQuestions).map(q =>
-            `<li class="text-sm">${q.questionContent} <span class="text-xs text-gray-500">(ID: ${q.questionId})</span></li>`
-        ).join('')}
-            </ul>
-        `;
-        detailContent.appendChild(editedSection);
-    }
-
-    // Deleted questions section
-    if (changeManager.deletedQuestions.length > 0) {
-        const deletedSection = document.createElement('div');
-        deletedSection.className = 'mb-4';
-        deletedSection.innerHTML = `
-            <h4 class="font-medium text-red-700 mb-2">Câu hỏi sẽ bị xóa (${changeManager.deletedQuestions.length})</h4>
-            <ul class="list-disc pl-5 space-y-1">
-                ${changeManager.deletedQuestions.map(id => {
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            let content = 'Câu hỏi không xác định';
-            if (row) {
-                const contentCell = row.querySelector('td:nth-child(2)');
-                if (contentCell) content = contentCell.textContent;
-            }
-            return `<li class="text-sm">${content} <span class="text-xs text-gray-500">(ID: ${id})</span></li>`;
-        }).join('')}
-            </ul>
-        `;
-        detailContent.appendChild(deletedSection);
-    }
-
-    // PDF upload section
-    if (changeManager.uploadedPdfs !== null) {
-        const pdfSection = document.createElement('div');
-        pdfSection.className = 'mb-4';
-        pdfSection.innerHTML = `
-            <h4 class="font-medium text-purple-700 mb-2">Tệp PDF sẽ được tải lên</h4>
-            <div class="text-sm">
-                <i class="fas fa-file-pdf text-red-600 mr-1"></i>
-                ${changeManager.uploadedPdfs.name}
-                <span class="text-gray-500 text-xs">(${(changeManager.uploadedPdfs.size / 1024).toFixed(2)} KB)</span>
-            </div>
-        `;
-        detailContent.appendChild(pdfSection);
-    }
-
-    detailPanel.classList.remove('hidden');
-}
-
-// Function to add temporary question row to the table
-function addTemporaryQuestionRow(question) {
-    const tbody = document.querySelector('tbody');
-    if (!tbody) return;
-
-    const newRowNumber = tbody.querySelectorAll('tr').length + 1;
-
-    const newRow = document.createElement('tr');
-    newRow.className = 'hover:bg-gray-50 bg-gray-100'; // Gray background to indicate pending
-    newRow.setAttribute('data-new', 'true'); // Mark as a new row
-
-    newRow.innerHTML = `
-        <td class="border border-gray-300 py-3 px-4">${newRowNumber}</td>
-        <td class="border border-gray-300 py-3 px-4">${question.questionContent}</td>
-        <td class="border border-gray-300 py-3 px-4 space-x-2">
-            <span class="text-orange-500 text-xs italic">
-                <i class="fas fa-clock mr-1"></i> Chờ lưu
-            </span>
-        </td>
-    `;
-
-    tbody.appendChild(newRow);
-
-    // Ẩn thông báo "không có câu hỏi nào" nếu có
-    const noQuestionsMsg = document.querySelector('h2[style*="color: red; text-align: center;"]');
-    if (noQuestionsMsg) {
-        noQuestionsMsg.style.display = 'none';
-    }
-}
-
-// Function to update row to show pending edit
-function updateRowAsPendingEdit(questionId, newContent) {
-    const questionRows = document.querySelectorAll('tbody tr');
-    for (const row of questionRows) {
-        if (row.getAttribute('data-id') === questionId) {
-            // Update the question content in the table with indicator
-            const contentCell = row.querySelector('td:nth-child(2)');
-            if (contentCell) {
-                const existingPendingIndicator = contentCell.querySelector('span.text-orange-500');
-                if (existingPendingIndicator) {
-                    existingPendingIndicator.remove();
-                }
-
-                contentCell.innerHTML = `${newContent} <span class="text-orange-500 text-xs italic ml-2"><i class="fas fa-clock"></i> Đã chỉnh sửa</span>`;
-            }
-            break;
-        }
-    }
-}
-
-// Save all pending changes to server
-function saveAllChanges() {
-    // Show loading state
-    const saveButton = document.getElementById('saveAllChangesBtn');
-    if (!saveButton) return;
-
-    const originalButtonText = saveButton.innerHTML;
-    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
-    saveButton.disabled = true;
-
-    // Create promises for all operations
-    const allPromises = [];
-
-    // Add operations
-    changeManager.addedQuestions.forEach(question => {
-        allPromises.push(addQuestionToServer(question));
-    });
-
-    // Edit operations
-    Object.values(changeManager.editedQuestions).forEach(question => {
-        allPromises.push(updateQuestionOnServer(question));
-    });
-
-    // Delete operations
-    changeManager.deletedQuestions.forEach(questionId => {
-        allPromises.push(deleteQuestionFromServer(questionId));
-    });
-
-    // PDF upload if any
-    if (changeManager.uploadedPdfs) {
-        allPromises.push(uploadPdfToServer(changeManager.uploadedPdfs));
-    }
-
-    // Execute all promises
-    Promise.all(allPromises)
-        .then(() => {
-            // All operations succeeded
-            showNotification('Thành công', 'Tất cả thay đổi đã được lưu', 'success');
-
-            // Apply UI changes permanently
-            applyUiChanges();
-
-            // Reset change manager
-            changeManager.reset();
-
-            // Hide panel
-            document.getElementById('saveChangesPanel').classList.add('hidden');
-            document.getElementById('changeDetailsPanel').classList.add('hidden');
-
-            // Reload PDF display if needed
-            if (typeof loadPdf === 'function' && changeManager.uploadedPdfs) {
-                loadPdf();
-            }
-        })
-        .catch(error => {
-            console.error('Error saving changes:', error);
-            showNotification('Lỗi', 'Có lỗi xảy ra khi lưu thay đổi. Vui lòng thử lại.', 'error');
-        })
-        .finally(() => {
-            // Restore button state
-            saveButton.innerHTML = originalButtonText;
-            saveButton.disabled = false;
-        });
-}
-
-// Cancel all pending changes
-function cancelAllChanges() {
-    if (confirm('Bạn có chắc muốn hủy tất cả thay đổi chưa lưu không?')) {
-        // Revert UI to match server state
-        revertUIChanges();
-
-        // Reset change manager
-        changeManager.reset();
-
-        // Hide panels
-        document.getElementById('saveChangesPanel').classList.add('hidden');
-        document.getElementById('changeDetailsPanel').classList.add('hidden');
-
-        showNotification('Thông báo', 'Đã hủy tất cả thay đổi', 'info');
-    }
-}
-
-// Apply all UI changes permanently after successful save
-function applyUiChanges() {
-    // Update added questions (now have IDs from server)
-    const pendingRows = document.querySelectorAll('tr[data-new="true"]');
-    pendingRows.forEach(row => {
-        row.removeAttribute('data-new');
-        row.classList.remove('bg-gray-100');
-
-        // We'd normally update with actual data, but will need page reload for full update
-        row.querySelector('td:last-child').innerHTML = '<span class="text-green-500">Đã lưu - Làm mới để xem đầy đủ</span>';
-    });
-
-    // Update edited questions (remove pending indicators)
-    Object.keys(changeManager.editedQuestions).forEach(id => {
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-            const contentCell = row.querySelector('td:nth-child(2)');
-            if (contentCell) {
-                const pendingIndicator = contentCell.querySelector('span.text-orange-500');
-                if (pendingIndicator) {
-                    pendingIndicator.remove();
-                }
-
-                // Show save indicator
-                contentCell.innerHTML += ' <span class="text-green-500 text-xs italic ml-2">(Đã lưu)</span>';
-
-                // The indicator will disappear on page reload
-                setTimeout(() => {
-                    const savedIndicator = contentCell.querySelector('span.text-green-500');
-                    if (savedIndicator) {
-                        savedIndicator.style.opacity = '0';
-                        savedIndicator.style.transition = 'opacity 1s';
+            // Kiểm tra đáp án bị xóa (có trong originalAnswers mà không có trong modifiedAnswers)
+            if (!questionChanged) {
+                for (let i = 0; i < originalAnswers.length; i++) {
+                    const origA = originalAnswers[i];
+                    const modA = modifiedAnswers.find(a => a.answerId === origA.answerId);
+                    if (!modA) {
+                        questionChanged = true;
+                        break;
                     }
-                }, 3000);
-            }
-        }
-    });
-
-    // Finalize deleted questions (already hidden)
-    changeManager.deletedQuestions.forEach(id => {
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-            row.remove(); // Remove completely now that delete is confirmed
-        }
-    });
-
-    // Clear any PDF preview
-    if (changeManager.uploadedPdfs) {
-        const previewContainer = document.getElementById('pdfPreviewContainer');
-        if (previewContainer) previewContainer.innerHTML = '';
-
-        const fileInput = document.getElementById('pdfFile');
-        if (fileInput) fileInput.value = '';
-    }
-
-    // Re-number table rows
-    const tableRows = document.querySelectorAll('tbody tr:not([style*="display: none"])');
-    tableRows.forEach((row, index) => {
-        const numberCell = row.querySelector('td:first-child');
-        if (numberCell) {
-            numberCell.textContent = index + 1;
-        }
-    });
-}
-
-// Revert UI changes to match server state
-function revertUIChanges() {
-    // Revert added questions (remove from UI)
-    const newRows = document.querySelectorAll('tbody tr[data-new="true"]');
-    newRows.forEach(row => row.remove());
-
-    // Revert edited questions (restore original content)
-    Object.entries(changeManager.editedQuestions).forEach(([id, _]) => {
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-            // Find edit button to get original content
-            const editBtn = row.querySelector('.edit-btn');
-            if (editBtn) {
-                const originalContent = editBtn.dataset.content;
-                const contentCell = row.querySelector('td:nth-child(2)');
-                if (contentCell) {
-                    contentCell.textContent = originalContent;
                 }
             }
         }
-    });
 
-    // Revert deleted questions (restore to UI)
-    changeManager.deletedQuestions.forEach(id => {
-        const row = document.querySelector(`tr[data-id="${id}"]`);
-        if (row) {
-            row.style.display = ''; // Restore row
+        if (questionChanged) {
+            changed.push(modQ);
         }
     });
 
-    // Clear any PDF preview
-    if (changeManager.uploadedPdfs) {
-        const previewContainer = document.getElementById('pdfPreviewContainer');
-        if (previewContainer) previewContainer.innerHTML = '';
+    return changed;
+}
 
-        const fileInput = document.getElementById('pdfFile');
-        if (fileInput) fileInput.value = '';
+
+// ----------_______________Test lưu toàn bô_____________-------------
+const saveBtn = document.getElementById('saveChangesButton');
+saveBtn.addEventListener('click', async () => {
+    const changedQuestions = getChangedQuestions(originalData, modifiedData);
+    console.log("change:",changedQuestions);
+
+    const fileInput = document.getElementById('pdfFile');
+    const file = fileInput.files[0];
+
+
+    if( changedQuestions.length > 0 && !file ) {
+        await saveChanges(changedQuestions);
+    }else if(changedQuestions.length === 0 && file) {
+        if ((file.type !== 'application/pdf') && !(!file)) {
+            alert('Vui lòng chọn tệp PDF hợp lệ.');
+        }
+        else if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            alert('Tệp PDF quá lớn. Vui lòng chọn tệp nhỏ hơn 10MB.');
+        }
+        await savePdf(file);
+    }else if (changedQuestions.length === 0 || !file) {
+        alert("Không có thay đổi nào cần lưu.");
+    }else{
+        await savePdf_allChange(file, changedQuestions);
+    }
+
+});
+
+
+// -----------// Gửi dữ liệu đã thay đổi đến server
+async function saveChanges(changedQuestions) {
+    try {
+        const response = await fetch('/admin/api/questionList/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(changedQuestions)
+        });
+
+        if (!response.ok) {
+            throw new Error('Lưu dữ liệu thất bại.');
+        }
+        const result = await response.json();
+        if( result.success) {
+            common.showNotification('Thành công', 'Dữ liệu đã được lưu thành công.', 'success');
+            // Cập nhật lại dữ liệu gốc và hiển thị lại bảng
+            originalData = JSON.parse(JSON.stringify(modifiedData));
+            renderTable(originalData.data);
+        } else{
+            common.showNotification('Cảnh báo', result.message, 'error');
+            await loadData();
+        }
+
+    } catch (err) {
+        console.error('Lỗi khi lưu:', err);
+        alert('Có lỗi xảy ra.');
     }
 }
 
-// Server communication functions
-function addQuestionToServer(question) {
-    const formData = new FormData();
-    formData.append('quesContent', question.questionContent);
-    formData.append('quesType', question.questionType);
-    formData.append('newCorrectAnswerIndex', question.correctAnswerIndex);
 
-    // Add answer data
-    question.answers.forEach((answer, index) => {
-        formData.append(`newAnswers[${index}].answerContent`, answer.content);
-    });
-
-    return fetch('/admin/addQues', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Server returned status: ' + response.status);
-            }
-            return response.json();
-        });
-}
-
-function updateQuestionOnServer(question) {
-    const formData = new FormData();
-    formData.append('questionId', question.questionId);
-    formData.append('questionContent', question.questionContent);
-    formData.append('correctAnswerIndex', question.correctAnswerIndex);
-
-    // Add answer data
-    question.answers.forEach((answer, index) => {
-        formData.append(`answers[${index}].answerId`, answer.answerId);
-        formData.append(`answers[${index}].answerContent`, answer.content);
-    });
-
-    return fetch('/admin/updateQues', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Server returned status: ' + response.status);
-            }
-            return response.json();
-        });
-}
-
-function deleteQuestionFromServer(questionId) {
-    return fetch(`/admin/deleteQues?quesId=${questionId}`, {
-        method: 'POST'
-    })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Có vấn đề khi xóa câu hỏi: ' + response.statusText);
-            }
-            return response;
-        });
-}
-
-function uploadPdfToServer(file) {
+async function savePdf(file){
     const url = window.location.pathname.split('/');
-    const id = url[url.length - 1]; // Lấy phần cuối của URL để xác định ID
+    const id = url[url.length - 1]; // Lấy phần cuối của URL để xác định ID câu hỏi
+
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('examId', id);
 
-    return fetch(`/admin/pdf/upload`, {
+    fetch(`/admin/pdf/upload`, {
         method: 'POST',
         body: formData
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('Có vấn đề khi tải lên tệp PDF: ' + response.statusText);
+        }
+        return response.json();
+    })
+        .then(data => {
+            if (data.success) {
+                common.showNotification("Thành công", "Tải lên PDF thành công.", "success");
+                // Cập nhật giao diện hoặc làm gì đó sau khi tải lên thành công
+                loadPdf();
+            } else {
+                alert('Tải lên PDF thất bại: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Có lỗi xảy ra:', error);
+            alert('Có lỗi khi tải lên PDF. Vui lòng thử lại sau.');
+        })
+}
+
+async function savePdf_allChange(file, changedQuestions){
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('changedQuestions', JSON.stringify(changedQuestions));
+    const url = window.location.pathname.split('/');
+    const id = url[url.length - 1];
+    formData.append('examId', id);
+    console.log(formData);
+    fetch(`/admin/question/saveAll`, {
+        method: 'POST',
+        body: formData
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('Có vấn đề khi tải lên tệp PDF: ' + response.statusText);
+        }
+        return response.json();
+    })
+        .then(data => {
+            if (data.success) {
+                common.showNotification("Thành công", "Dữ liệu đã được lưu thành công.", "success");
+                // Cập nhật giao diện hoặc làm gì đó sau khi tải lên thành công
+                originalData = JSON.parse(JSON.stringify(modifiedData));
+                renderTable(originalData.data);
+                loadPdf();
+
+            } else {
+                alert('Save All Failed: ' + data.message);
+                common.showNotification("Cảnh báo", data.message, "error");
+            }
+        })
+        .catch(error => {
+            console.error('Có lỗi xảy ra:', error);
+            alert('Có lỗi khi tải lên PDF. Vui lòng thử lại sau.');
+        })
+}
+
+
+
+
+// --------------------loadData PDF_----------
+
+function loadPdf(){
+    const url = window.location.pathname.split('/');
+    const id = url[url.length - 1];
+    // Fetch the exam details to check if a PDF is already uploaded
+    fetch(`/admin/pdf/${id}`, {
+        method: 'GET',
     })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Có vấn đề khi tải lên tệp PDF: ' + response.statusText);
+                throw new Error('Không thể tải thông tin PDF: ' + response.statusText);
             }
+            console.log("Đã tải thông tin PDF thành công");
             return response.json();
+        })
+        .then(data => {
+            console.log(data);
+            const pdfContainer = document.getElementById('pdfContainer');
+            if (data.pdfFiles) {
+                pdfContainer.innerHTML = '';
+                // Hiển thị PDF
+                for (const pdfFile of data.pdfFiles) {
+                    const pdf = pdfFile;
+                    const byteCharacters = atob(pdf.fileData);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: pdf.fileType });
+                    const blobUrl = URL.createObjectURL(blob);
+                    // Gắn link nếu bạn muốn người dùng click:
+                    pdfContainer.innerHTML += `
+                    <a href="${blobUrl}" target="_blank" class="text-blue-600 hover:underline">
+                     Mở PDF: ${pdf.fileName}
+                     </a>
+                     <br>
+                  `;
+                }
+
+            } else {
+                pdfContainer.innerHTML = '<p class="text-gray-500">Chưa có PDF nào được tải lên.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Có lỗi xảy ra khi tải thông tin PDF:', error);
+            document.getElementById('pdfContainer').innerHTML = '<p class="text-red-500">Không thể tải thông tin PDF. Vui lòng thử lại sau.</p>';
         });
+}
+
+document.addEventListener('DOMContentLoaded', loadPdf);
+
+
+
+// --------------------Xóa câu hỏi-------------------
+
+
+document.getElementById('tableBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('.delete-btn');
+    if (!btn) return;
+
+    e.preventDefault();
+    const questionId = btn.dataset.id;
+
+    // Show edit modal
+    document.getElementById('deleteQuesId').value = questionId;
+
+    document.getElementById('deleteUserModal').classList.remove('hidden');
+});
+
+function closeDeleteModal() {
+    renderTable(modifiedData.data);
+    document.getElementById('deleteUserModal').classList.add('hidden');
+}
+
+document.getElementById('deleteQuesForm').addEventListener('submit',handleDelQuestion );
+
+// lưu tạm thời
+function handleDelQuestion(event){
+    event.preventDefault();
+
+
+    const questionId = document.getElementById('deleteQuesId').value;
+    console.log("questionId:",questionId);
+
+
+    const found = modifiedData.data.find(item => item.questionId == questionId);
+    if(!found){
+        alert('Câu hỏi không tồn tại.');
+        return;
+    }
+    found.statusChange = "deleted";
+
+    if(getChangedQuestions(originalData,modifiedData)){
+        console.log("found:",getChangedQuestions(originalData, modifiedData));
+    }
+
+    closeDeleteModal();
+}
+
+
+// --------------------Thêm câu hỏi-------------------
+
+
+document.getElementById('add-question').addEventListener('click', (e) => {
+
+    e.preventDefault();
+
+    // Initialize the add question form
+    const addAnswersList = document.getElementById('add-answers-list');
+    addAnswersList.innerHTML = '';
+
+    // Add initial answer field
+    addNewAnswerInput(addAnswersList, '', false, 0);
+    updateAddAnswerCounter(1);
+
+    // Show edit modal
+    document.getElementById('addModel').classList.remove('hidden');
+});
+
+function closeAddModal() {
+    renderTable(modifiedData.data);
+    document.getElementById('addModel').classList.add('hidden');
+}
+
+document.getElementById('addQuestionForm').addEventListener('submit',handleAddQuestion );
+
+// lưu tạm thời
+function handleAddQuestion(event){
+    event.preventDefault();
+
+    const id = originalData.data[0].questionType;
+
+
+    const questionContent = document.getElementById('quesContent').value.trim();
+    console.log("questionContent:", questionContent);
+
+    if (!questionContent) {
+        alert("Vui lòng nhập nội dung câu hỏi");
+        return;
+    }
+    const answersList = document.getElementById('add-answers-list');
+    const answers = answersList.querySelectorAll('div.flex.items-start');
+
+    if (answers.length <= 1) {
+        alert('Vui lòng thêm ít nhất hai đáp án cho câu hỏi.');
+        return false;
+    }
+
+    // Ensure at least one answer is marked as correct
+    const correctAnswer = answersList.querySelector('input[name="newCorrectAnswerIndex"]:checked');
+    if (!correctAnswer) {
+        alert('Vui lòng chọn một đáp án đúng.');
+        return false;
+    }
+
+
+    const newQuestion = {
+        questionId: 'new-' + Date.now(), // id tạm, bạn có thể sửa theo yêu cầu
+        questionContent: questionContent,
+        statusChange: "addNew",
+        questionType: 1
+    };
+
+
+
+    modifiedData.data.push(newQuestion)
+    if(getChangedQuestions(originalData,modifiedData)){
+        console.log("change:",getChangedQuestions(originalData,modifiedData));
+    }
+
+    closeAddModal();
+}
+
+
+// -------------Hàm Add thêm câu hỏi mới -------------
+function addNewAnswerInput(container, content = '', isCorrect = false, index) {
+    const answerDiv = document.createElement('div');
+    answerDiv.className = 'flex items-start space-x-2';
+
+    // Unique ID for each answer
+    const uniqueId = 'new-' + Date.now() + '-' + index;
+
+    answerDiv.innerHTML = `
+                <div class="flex-grow">
+                    <input
+                        type="text"
+                        name="newAnswers[${index}].answerContent"
+                        value="${content}"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                        placeholder="Nhập nội dung đáp án"
+                        required
+                    >
+                </div>
+                <div class="flex items-center space-x-2 pt-2">
+                    <input
+                        type="radio"
+                        name="newCorrectAnswerIndex"
+                        id="correct-${uniqueId}"
+                        value="${index}"
+                        ${isCorrect ? 'checked' : ''}
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    >
+                    <label for="correct-${uniqueId}" class="text-xs text-gray-700 cursor-pointer">Đáp án đúng</label>
+                    <button
+                        type="button"
+                        class="text-red-500 hover:text-red-700 focus:outline-none delete-new-answer-btn"
+                        aria-label="Xóa đáp án"
+                    >
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;
+
+    container.appendChild(answerDiv);
+
+    // Add event listener to delete button
+    const deleteBtn = answerDiv.querySelector('.delete-new-answer-btn');
+    deleteBtn.addEventListener('click', function () {
+        answerDiv.remove();
+        // Renumber the answers
+        renumberNewAnswers();
+        // Update counter
+        const currentCount = container.querySelectorAll('div.flex.items-start').length;
+        updateAddAnswerCounter(currentCount);
+    });
+}
+function updateAddAnswerCounter(count) {
+    const counterElement = document.getElementById('add-answers-count');
+    counterElement.textContent = `${count}/${MAX_ANSWERS}`;
+
+    const addNewAnswerBtn = document.getElementById('add-new-answer-btn');
+    const limitMessage = document.getElementById('add-answer-limit-message');
+
+    if (count >= MAX_ANSWERS) {
+        addNewAnswerBtn.disabled = true;
+        addNewAnswerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        limitMessage.classList.remove('hidden');
+    } else {
+        addNewAnswerBtn.disabled = false;
+        addNewAnswerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        limitMessage.classList.add('hidden');
+    }
+}
+document.getElementById('add-new-answer-btn').addEventListener('click', function () {
+    const answersList = document.getElementById('add-answers-list');
+    const currentCount = answersList.querySelectorAll('div.flex.items-start').length;
+
+    // Check if we've reached the maximum allowed answers
+    if (currentCount < MAX_ANSWERS) {
+        addNewAnswerInput(answersList, '', false, currentCount);
+        updateAddAnswerCounter(currentCount + 1);
+    }
+});
+function renumberNewAnswers() {
+    const answersList = document.getElementById('add-answers-list');
+    const answers = answersList.querySelectorAll('div.flex.items-start');
+
+    answers.forEach((answer, index) => {
+        // Update the name attributes to have sequential indices
+        const textInput = answer.querySelector('input[type="text"]');
+        textInput.name = `newAnswers[${index}].answerContent`;
+
+        const radioInput = answer.querySelector('input[type="radio"]');
+        radioInput.value = index;
+    });
 }

@@ -32,4 +32,15 @@ public class ExamServiceImpl implements ExamService {
         exam1.setExamName("Bộ câu hỏi số " + type);
         examRepository.save(exam1);
     }
+
+    @Override
+    public void saveExam(Exam exam) {
+        Exam ex1 = examRepository.findExamByExamId(exam.getExamId());
+        if (ex1 != null) {
+            ex1.setPdfFile(exam.getPdfFile());
+            examRepository.save(ex1);
+        }else{
+            System.err.println("không tồn tại exam!");
+        }
+    }
 }
