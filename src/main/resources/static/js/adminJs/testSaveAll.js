@@ -590,21 +590,31 @@ function handleAddQuestion(event){
         questionId: 'new-' + Date.now(), // id tạm, bạn có thể sửa theo yêu cầu
         questionContent: questionContent,
         statusChange: "addNew",
-        questionType: 1
+        questionType: originalData.data[0].questionType,
+        answers: []
     };
+    // Add answer data
+    answers.forEach((element, index) => {
+        const content = element.querySelector('input[type="text"]').value;
+        newQuestion.answers.push({
+            answerContent: content,
+            correct: (index === parseInt(correctAnswer.value ? true : false)),
+        });
+    });
+
 
 
 
     modifiedData.data.push(newQuestion)
     if(getChangedQuestions(originalData,modifiedData)){
-        console.log("change:",getChangedQuestions(originalData,modifiedData));
+        console.log("Change:",getChangedQuestions(originalData,modifiedData));
     }
 
     closeAddModal();
 }
 
 
-// -------------Hàm Add thêm câu hỏi mới -------------
+//     --------________Hàm Add thêm câu hỏi mới________--------
 function addNewAnswerInput(container, content = '', isCorrect = false, index) {
     const answerDiv = document.createElement('div');
     answerDiv.className = 'flex items-start space-x-2';
