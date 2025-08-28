@@ -60,7 +60,8 @@
                 <a th:href="@{/admin/download-csv/{key}(key=${questionTypes})}"
                    class="bg-gray-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
                 >Xuất File CSV</a>
-                <a href="#"
+                <a id="add-question"
+                   href="#"
                    class="bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 add-btn"
                 >Thêm câu hỏi</a>
 <!--                <button type="button"-->
@@ -69,7 +70,7 @@
 <!--                >Lưu thay đổi</button>-->
             </div>
         </div>
-        <table class="min-w-full table-auto border-collapse border border-gray-200">
+        <table id="tableQues" class="min-w-full table-auto border-collapse border border-gray-200">
             <thead>
             <tr class="bg-gray-100 text-gray-700 text-xs uppercase font-semibold">
                 <th class="border border-gray-300 py-3 px-4 text-left">STT</th>
@@ -77,7 +78,7 @@
                 <th class="border border-gray-300 py-3 px-4 text-left">Hành động</th>
             </tr>
             </thead>
-            <tbody>
+            <tbody id="tableBody">
             <tr class="hover:bg-gray-50" th:each="ls, index : ${questionList}" th:attr="data-id=${ls.questionId}">
                 <td class="border border-gray-300 py-3 px-4" th:text="${index.count}">1</td>
                 <td class="border border-gray-300 py-3 px-4" th:text="${ls.questionContent}">
@@ -94,7 +95,7 @@
             </tr>
             </tbody>
         </table>
-        <h2 th:if="${totalQues==0}" style="color: red; text-align: center;">
+        <h2 th:if="${totalQues==0}" style="color: red; text-align: center;">het
             Bộ câu hỏi hiện không khả dụng
         </h2>
 
@@ -110,15 +111,27 @@
                     <div class="mb-3">
                         <input type="file" class="form-control" id="pdfFile" accept="application/pdf" />
                     </div>
-                    <div class="d-grid">
-                        <button id="update-question" class="btn btn-primary" onclick="uploadPdf()">Lưu chỉnh sửa</button>
-                    </div>
+<!--                    <div class="d-grid">-->
+<!--                        <button id="update-question" class="btn btn-primary" onclick="uploadPdf()">Lưu chỉnh sửa</button>-->
+<!--                    </div>-->
                     <div id="pdfContainer" class="mt-4">
                         <!-- Nội dung PDF sẽ hiển thị ở đây -->
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Add this near your form buttons -->
+    <div class="flex items-center mt-4">
+        <button
+                id="saveChangesButton"
+                type="button"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            <i class="fas fa-save mr-2"></i> Lưu thay đổi
+        </button>
+        <span id="unsavedChangesIndicator" class="ml-2 text-yellow-600 text-sm hidden"></span>
     </div>
 
 
@@ -138,8 +151,8 @@
                         onclick="closeDeleteModal()"
                         class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
                 >Hủy</button>
-                <form id="deleteUserForm" method="post" class="inline">
-                    <input type="hidden" id="deleteUserId" name="quesId"/>
+                <form id="deleteQuesForm" method="post" class="inline">
+                    <input type="hidden" id="deleteQuesId" name="quesId"/>
                     <button id="deleteUserButton"
                             type="submit"
                             class="px-4 py-2 border border-red-500 rounded-md text-red-500 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300"
@@ -159,7 +172,7 @@
                 <h2 class="text-lg font-semibold text-gray-900 select-none" id="modal-title">
                     Thêm câu hỏi mới
                 </h2>
-                <button type="button" onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                <button type="button" onclick="closeAddModal()" class="text-gray-500 hover:text-gray-700 focus:outline-none">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -202,7 +215,7 @@
                 <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                     <button class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300"
                             type="button"
-                            onclick="closeEditModal()"
+                            onclick="closeAddModal()"
                     >Hủy</button>
                     <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
                             type="submit"
@@ -301,8 +314,8 @@
         </div>
     </div>
 
-    <script src="/js/quesList.js"></script>
-<!--    <script src="/js/adminJs/testSaveAll.js"></script>-->
+<!--    <script type="module" src="/js/quesList.js"></script>-->
+    <script type="module" src="/js/adminJs/testSaveAll.js"></script>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

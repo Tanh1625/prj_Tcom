@@ -56,7 +56,7 @@ public class ImportExcelController {
             if(questions.isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Nhập file không thành công! Vui lòng kiểm tra lại đúng định dạng!");
-                return ResponseEntity.ok(response);
+                return ResponseEntity.badRequest().body(response);
             }
             int count = 0;
             for (Question question : questions) {

@@ -24,11 +24,27 @@ public class PdfServiceImpl implements PdfService {
     public PdfFile save(MultipartFile file, int examid) throws IOException {
         Exam exam = examService.getExamById(examid);
         PdfFile pdfFile = new PdfFile();
+        if(pdfRepository.existsByExam(exam)) {
+            pdfFile = pdfRepository.findByExam(exam);
+            System.out.println("PDF file already exists for this exam, updating the existing file.");
+        }else {
+            System.out.println("Creating a new PDF file for the exam.");
+        }
+        System.out.println("Exam : " + exam);
+
+
         pdfFile.setFileName(file.getOriginalFilename());
         pdfFile.setFileType(file.getContentType());
         pdfFile.setFileData(file.getBytes());
         pdfFile.setExam(exam);
-        return pdfRepository.save(pdfFile);
+
+        pdfRepository.save(pdfFile);
+
+        exam.setPdfFile(pdfFile);
+        System.out.println("PDF File : " + exam.getPdfFile());
+        examService.saveExam(exam);
+
+        return pdfFile;
     }
 
     @Override

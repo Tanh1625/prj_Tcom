@@ -10,4 +10,6 @@ public interface PdfRepository extends JpaRepository<PdfFile, Integer> {
     PdfFile findByExam(Exam exam);
 
     List<PdfFile> findAllByExam(Exam exam);
+
+    boolean existsByExam(Exam exam);
 }

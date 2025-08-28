@@ -1,5 +1,6 @@
 package com.HE181864.mvc.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import javax.persistence.*;
 
@@ -21,10 +22,11 @@ public class PdfFile {
     @Column(name = "file_data", nullable = false)
     private byte[] fileData;
 
-    @ManyToOne
-    @JsonManagedReference
+    @OneToOne(optional = false)
     @JoinColumn(name = "exam_id", nullable = false)
+    @JsonBackReference
     private Exam exam;
+
 
 
     public PdfFile() {

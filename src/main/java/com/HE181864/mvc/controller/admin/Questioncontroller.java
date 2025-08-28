@@ -1,23 +1,28 @@
 package com.HE181864.mvc.controller.admin;
 
+import com.HE181864.mvc.DTO.AnswerDTO;
+import com.HE181864.mvc.DTO.ChangedQuestionDTO;
 import com.HE181864.mvc.model.*;
+import com.HE181864.mvc.repository.AnswerRepository;
+import com.HE181864.mvc.repository.QuestionReporsitory;
 import com.HE181864.mvc.service.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 public class Questioncontroller {
@@ -34,6 +39,12 @@ public class Questioncontroller {
     private UserService userService;
     @Autowired
     private ExamService examService;
+    @Autowired
+    private QuestionReporsitory questionRepository;
+    @Autowired
+    private AnswerRepository answerRepository;
+    @Autowired
+    private PdfService pdfService;
 
 
     @GetMapping("/admin/question")
@@ -72,18 +83,14 @@ public class Questioncontroller {
                                 @RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
                                 @ModelAttribute("search") String search) {
 
-        Authentication authen = SecurityContextHolder.getContext().getAuthentication();
-        String email = authen.getName();
-        model.addAttribute("userId", email);
 
 
-        List<Question> questionList = questionService.getQuesbyType(key);
-        System.err.println(questionList.size());
-        model.addAttribute("totalQues", questionList.size());
-        model.addAttribute("questionTypes", key);
-//        model.addAttribute("currentPage", pageNo);
-//        model.addAttribute("totalPage", questionList.getTotalPages());
-        model.addAttribute("questionList", questionList);
+//        List<Question> questionList = questionService.getQuesbyType(key);
+//        System.err.println(questionList.size());
+//        model.addAttribute("totalQues", questionList.size());
+//        model.addAttribute("questionTypes", key);
+//
+//        model.addAttribute("questionList", questionList);
         return "admin/quesList";
     }
 
@@ -288,5 +295,202 @@ public class Questioncontroller {
             response.put("message", "Lỗi xử lý: " + e.getMessage());
         }
         return response;
+    }
+
+
+    @GetMapping("/admin/api/questionList/{id}")
+    public ResponseEntity<Map<String, Object>> questionList1(HttpServletRequest request,
+                               Model model,
+                               @PathVariable int id,
+                               @RequestParam(value = "pageNo", defaultValue = "1") int pageNo,
+                               @ModelAttribute("search") String search) {
+
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<Question> questionList = questionService.getQuesbyType(id);
+            if (questionList.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Không có câu hỏi nào trong hệ thống");
+                response.put("data", questionList);
+                return ResponseEntity.ok(response);
+            }else {
+                response.put("success", true);
+                response.put("message", "Lấy danh sách câu hỏi thành công");
+                response.put("data", questionList);
+            }
+        }catch (Exception e){
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+            return ResponseEntity.ok(response);
+        }
+        return ResponseEntity.ok(response);
+    }
+
+
+
+
+//    test
+
+    @PostMapping("/admin/api/questionList/update")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<Map<String, Object>> updateQuestions(@RequestBody List<ChangedQuestionDTO> changedQuestions) {
+        Map<String, Object> response = updateData(changedQuestions);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/admin/question/saveAll")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> saveAllQuestions(
+                                                                @RequestParam("file") MultipartFile file,
+                                                                @RequestParam("changedQuestions") String changedQuestionsJson,
+                                                                @RequestParam("examId") String examId) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if (file == null || file.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "File không được để trống");
+                return ResponseEntity.ok(response);
+            }
+
+            if (examId == null || examId.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "ID bài thi không được để trống");
+                return ResponseEntity.ok(response);
+            }
+
+            // Chuyển chuỗi câu hỏi thành danh sách các câu hỏi
+            List<ChangedQuestionDTO> changedQuestions = new ArrayList<>();
+            ObjectMapper mapper = new ObjectMapper();                //TypeReference<T> để mapper có thể biết chuẩn kiểu dữ liệu cần parse sang
+            changedQuestions = mapper.readValue(changedQuestionsJson, new TypeReference<List<ChangedQuestionDTO>>() {
+            });
+
+
+            System.out.println("Exam ID: " + examId);
+            System.out.println("ChangQuesList: " + changedQuestions.size());
+            System.out.println("File Name: " + file.getOriginalFilename());
+
+            int id = Integer.parseInt(examId);
+            Map<String, Object> res1 = updateData(changedQuestions);
+            Map<String, Object> res2 = uploadPDF(file, id);
+
+            boolean updateSuccess = Boolean.TRUE.equals(res1.get("success"));
+            boolean uploadSuccess = Boolean.TRUE.equals(res2.get("success"));
+
+            // Tổng hợp kết quả
+            if (updateSuccess && uploadSuccess) {
+                response.put("success", true);
+                response.put("message", "Cập nhật dữ liệu và tải file thành công");
+            } else {
+                response.put("success", false);
+                List<String> failedMessages = new ArrayList<>();
+                if (!updateSuccess) {
+                    failedMessages.add("Cập nhật câu hỏi thất bại: " + res1.get("message"));
+                }else failedMessages.add("Cập nhật câu hỏi thành công");
+                if (!uploadSuccess) {
+                    failedMessages.add("Tải file thất bại: " + res2.get("message"));
+                }else failedMessages.add("Tải file thành công");
+                response.put("message", String.join(" && ", failedMessages));
+            }
+
+
+
+
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+        }
+        return ResponseEntity.ok(response);
+    }
+
+
+
+
+
+
+//    -----------------Hàm updateData-------------------
+    private Map<String, Object> updateData(List<ChangedQuestionDTO> changedQuestions) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            int count =0;
+            String errQues = "";
+            for (ChangedQuestionDTO questionMap : changedQuestions) {
+
+                int questionId = questionMap.getQuestionId();
+                String newContent = (String) questionMap.getQuestionContent();
+
+                // Tìm câu hỏi trong DB
+                Optional<Question> optionalQuestion = questionRepository.findById(questionId);
+                if (!optionalQuestion.isPresent()) {
+                    continue;
+                }
+
+                Question question = optionalQuestion.get();
+
+                // Cập nhật nếu nội dung khác
+                if (questionService.isExitQuestion(newContent, question.getQuestionType())
+                        && !question.getQuestionContent().equals(newContent)) {
+                    response.put("success", false);
+                    response.put("message", "Không thể cập nhập câu hỏi: " + newContent +" vì đã tồn tại");
+                    count++;
+                    continue;
+                }
+                if (!Objects.equals(question.getQuestionContent(), newContent)) {
+                    question.setQuestionContent(newContent);
+                    questionRepository.save(question);
+                }
+
+                // Danh sách đáp án
+                List<AnswerDTO> answers = questionMap.getAnswers();
+
+                for (AnswerDTO answerDTO : answers) {
+                    int answerId = answerDTO.getAnswerId();
+                    String newAnswerContent = (String) answerDTO.getAnswerContent();
+                    Boolean isCorrect = answerDTO.isCorrect();
+
+                    // Tìm đáp án trong DB
+                    Optional<Answer> optionalAnswer = answerRepository.findById(answerId);
+                    if (!optionalAnswer.isPresent()) {
+                        continue;
+                    }
+
+                    Answer answer = optionalAnswer.get();
+
+                    // Cập nhật nếu có thay đổi
+                    if (!Objects.equals(answer.getAnswerContent(), newAnswerContent) ||
+                            !Objects.equals(answer.isCorrect(), isCorrect)) {
+                        answer.setAnswerContent(newAnswerContent);
+                        answer.setCorrect(isCorrect);
+                        answerRepository.save(answer);
+                    }
+                }
+            }
+            if(count==0){
+                response.put("success", true);
+                response.put("message", "Cập nhật thành công");
+            }
+
+            return response;
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi: " + e.getMessage());
+        }
+        return response;
+    }
+
+//    ------------Hàm uploadPDF--------------
+    private Map<String, Object> uploadPDF(MultipartFile file, int examId) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            pdfService.save(file, examId);
+            response.put("message", "File uploaded successfully");
+            response.put("success", true);
+            return response;
+        } catch (IOException e) {
+            response.put("message", "File upload failed: " + e.getMessage());
+            response.put("success", false);
+            return response;
+        }
+
     }
 }
